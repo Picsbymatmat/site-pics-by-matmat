@@ -1,0 +1,106 @@
+/* Polaroid confirmation — the site's one hero motion moment (spec §6).
+   Rise (450ms) then develop (2400ms), with a short pause between so the
+   blank frame reads before the image resolves. */
+
+.polaroid {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+.polaroid__frame {
+  /* A real physical prop against the dark page: a near-white card, not a
+     token-dark one. --surface reads as "dark UI panel," not "photo paper."
+     Judgment call per the brief — trust the object read here. */
+  --polaroid-paper: #f4f1ea;
+  --polaroid-paper-shadow: rgba(0, 0, 0, 0.45);
+
+  width: min(360px, 82vw);
+  background: var(--polaroid-paper);
+  padding: 4.5% 4.5% 11%;
+  box-shadow: 0 18px 40px var(--polaroid-paper-shadow);
+  box-sizing: border-box;
+
+  /* Rise: starts below and transparent, settles into place. */
+  transform: translateY(28%);
+  opacity: 0;
+  transition:
+    transform var(--dur-polaroid-rise) cubic-bezier(0.16, 1, 0.3, 1),
+    opacity var(--dur-polaroid-rise) ease-out;
+}
+
+.polaroid--risen .polaroid__frame {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+.polaroid--no-motion .polaroid__frame {
+  transition: none;
+}
+
+.polaroid__image-area {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+  background: #d8d4ca;
+}
+
+.polaroid__photo {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: grayscale(1) brightness(1.35) contrast(0.5);
+  transition-property: filter;
+  transition-timing-function: ease-out;
+  /* transition-duration set inline from --dur-polaroid-develop */
+}
+
+.polaroid__photo--developed {
+  filter: none;
+}
+
+/* No hero photo yet for this category: develop to a flat tint instead of
+   faking a photograph (spec: PhotoAsset hero === null). */
+.polaroid__tint {
+  width: 100%;
+  height: 100%;
+  background: var(--surface);
+  filter: grayscale(1) brightness(1.35) contrast(0.5);
+  transition-property: filter;
+  transition-timing-function: ease-out;
+}
+
+.polaroid__tint--developed {
+  filter: none;
+}
+
+.polaroid--no-motion .polaroid__photo,
+.polaroid--no-motion .polaroid__tint {
+  transition: none;
+}
+
+.polaroid__margin {
+  margin: 0;
+  padding-top: 6%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.75em;
+}
+
+.polaroid__hand {
+  margin: 0;
+  font-family: var(--font-hand);
+  font-size: var(--text-2xl);
+  line-height: 1.2;
+  color: #2a2620;
+  text-align: center;
+}
+
+@media (max-width: 768px) {
+  .polaroid__frame {
+    width: 82vw;
+  }
+}

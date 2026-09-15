@@ -1,0 +1,170 @@
+.category-view {
+  position: relative;
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--ink);
+  padding-bottom: var(--space-24);
+}
+
+.category-view-bar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  padding: var(--space-4) var(--space-4) 0;
+}
+
+.category-return {
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  font-size: var(--text-sm);
+  padding: var(--space-2) var(--space-3);
+  min-height: 44px;
+  cursor: pointer;
+}
+
+.category-return:hover {
+  color: var(--accent);
+}
+
+.category-view-heading {
+  font-size: var(--text-3xl);
+  padding: var(--space-8) var(--space-4) var(--space-6);
+  font-weight: 700;
+}
+
+/* Rails fade in as one group, not staggered per row. §6 "Category open". */
+.category-rails {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  animation: category-rails-in var(--dur-rails-in) ease-in-out;
+}
+
+@keyframes category-rails-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.category-rail-block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.category-rail-track {
+  display: flex;
+  gap: var(--space-3);
+  padding: 0 var(--space-4);
+  will-change: transform;
+}
+
+/* Desktop: overflow clipped, JS-driven translate3d parallax handles
+   horizontal drift. */
+@media (min-width: 768px) {
+  .category-rail-block {
+    overflow-x: clip;
+  }
+}
+
+/* Mobile: native horizontal scroll with snap, no parallax translation at
+   all (the rAF loop is disabled in JS below this breakpoint). §7 "Rails". */
+@media (max-width: 767px) {
+  .category-rail-track {
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scroll-padding: 0 var(--space-4);
+  }
+
+  .category-frame {
+    scroll-snap-align: start;
+  }
+}
+
+.category-frame {
+  flex: none;
+  display: flex;
+  align-items: stretch;
+  width: 240px;
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+
+.category-frame img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  aspect-ratio: 4 / 5;
+}
+
+.category-frame-sprocket {
+  flex: none;
+  width: 6px;
+  background-image: repeating-linear-gradient(
+    to bottom,
+    var(--rule) 0,
+    var(--rule) 6px,
+    transparent 6px,
+    transparent 12px
+  );
+}
+
+.category-rail-rule {
+  display: flex;
+  align-items: center;
+  padding: 0 var(--space-4);
+  height: 28px;
+  border-top: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
+  color: var(--muted);
+  font-size: var(--text-xs);
+  letter-spacing: 0.04em;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.category-empty {
+  padding: var(--space-16) var(--space-4);
+  max-width: 60ch;
+}
+
+.category-empty-text {
+  color: var(--muted);
+  font-size: var(--text-lg);
+}
+
+.category-view-cta {
+  display: flex;
+  justify-content: center;
+  padding: var(--space-16) var(--space-4) 0;
+}
+
+.category-book {
+  background: transparent;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  font-family: var(--font-mono);
+  font-size: var(--text-base);
+  padding: var(--space-4) var(--space-8);
+  min-height: 44px;
+  cursor: pointer;
+}
+
+.category-book:hover {
+  background: var(--accent);
+  color: var(--bg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .category-rails {
+    animation: none;
+  }
+}

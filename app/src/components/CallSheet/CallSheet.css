@@ -1,0 +1,153 @@
+/* The call sheet — a production call sheet as a booking form. §3, §8. */
+
+.call-sheet {
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  padding: var(--space-8);
+  max-width: 40rem;
+  margin: 0 auto;
+}
+
+.call-sheet__above {
+  font-size: var(--text-lg);
+  margin-bottom: var(--space-6);
+}
+
+.call-sheet__preset-heading {
+  font-size: var(--text-xl);
+  margin-bottom: var(--space-6);
+}
+
+.call-sheet__form {
+  display: flex;
+  flex-direction: column;
+}
+
+.call-sheet__row {
+  display: grid;
+  grid-template-columns: 10rem 1fr;
+  align-items: start;
+  gap: var(--space-4);
+  padding: var(--space-4) 0;
+  border-top: 1px solid var(--rule);
+}
+
+.call-sheet__row:last-of-type {
+  border-bottom: 1px solid var(--rule);
+}
+
+.call-sheet__label {
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  padding-top: var(--space-2);
+}
+
+.call-sheet__control {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.call-sheet__control input,
+.call-sheet__control select,
+.call-sheet__control textarea {
+  width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--rule);
+  color: var(--ink);
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-base);
+  font-family: var(--font-display);
+  min-height: 44px;
+}
+
+.call-sheet__control textarea {
+  min-height: 6rem;
+  resize: vertical;
+  font-family: inherit;
+}
+
+.call-sheet__control input:focus,
+.call-sheet__control select:focus,
+.call-sheet__control textarea:focus {
+  border-color: var(--accent);
+}
+
+.call-sheet__error {
+  color: var(--accent);
+  font-size: var(--text-sm);
+  margin: 0;
+}
+
+.call-sheet__failure {
+  color: var(--accent);
+  font-size: var(--text-sm);
+  margin: var(--space-4) 0 0;
+}
+
+.call-sheet__submit-row {
+  margin-top: var(--space-6);
+  display: flex;
+  justify-content: flex-end;
+}
+
+.call-sheet__submit {
+  background: var(--accent);
+  color: var(--bg);
+  border: none;
+  padding: var(--space-3) var(--space-8);
+  font-size: var(--text-base);
+  font-family: var(--font-display);
+  font-weight: 700;
+  cursor: pointer;
+  min-height: 44px;
+  min-width: 44px;
+}
+
+.call-sheet__submit:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.call-sheet--success {
+  text-align: center;
+  padding: var(--space-12) var(--space-8);
+}
+
+.call-sheet__success-note {
+  font-size: var(--text-lg);
+  color: var(--ink);
+}
+
+@media (max-width: 768px) {
+  .call-sheet {
+    padding: var(--space-4);
+    border-left: none;
+    border-right: none;
+  }
+
+  .call-sheet__row {
+    grid-template-columns: 1fr;
+    gap: var(--space-2);
+  }
+
+  .call-sheet__label {
+    padding-top: 0;
+  }
+
+  .call-sheet__control input,
+  .call-sheet__control select,
+  .call-sheet__control textarea {
+    font-size: 16px;
+  }
+
+  .call-sheet__submit-row {
+    justify-content: stretch;
+  }
+
+  .call-sheet__submit {
+    width: 100%;
+  }
+}

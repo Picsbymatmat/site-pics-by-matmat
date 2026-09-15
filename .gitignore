@@ -1,0 +1,6 @@
+.DS_Store
+
+# Scratch exports from the earlier 3-category Design-canvas mockups,
+# superseded by the current 4-category spec. Not part of the real build.
+.dc-work/
+.storyboard-work/

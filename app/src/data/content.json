@@ -1,0 +1,26 @@
+{
+  "testimonials": [],
+  "results": [],
+  "copy": {
+    "nav.book": "Book",
+    "nav.instagram": "Instagram",
+    "landing.heading": "Book a shoot.",
+    "landing.portfolioLink": "See more work",
+    "callsheet.presetHeading": "Shoot type — {category}",
+    "callsheet.firstFieldLabel": "SHOOT TYPE",
+    "callsheet.aboveForm": "Tell Matt what you're planning.",
+    "calendar.heading": "When works for you?",
+    "submit.default": "Send to Matt",
+    "submit.pending": "Sending",
+    "confirmation.message": "Got it. Matt will text you to confirm the date.",
+    "failure.message": "That didn't send. Check your connection and try again."
+  },
+  "portfolioLinks": [
+    { "label": "Portfolio", "url": "https://picsbymatmat.com/work" },
+    { "label": "Portfolio (alt)", "url": "https://picsbymatmat0fb5.myportfolio.com/work" }
+  ],
+  "contact": {
+    "instagram": "",
+    "email": ""
+  }
+}

@@ -1,0 +1,74 @@
+:root {
+  /* Colour — one palette, site-wide. §4 */
+  --bg: #0e0e10;
+  --surface: #18181c;
+  --ink: #f2f0ec;
+  --muted: #8c8981;
+  --accent: #c08a4a;
+  --rule: #2a2a30;
+
+  /* Type scale, 1.25 ratio. §5 */
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.25rem;
+  --text-xl: 1.563rem;
+  --text-2xl: 1.953rem;
+  --text-3xl: 2.441rem;
+  --text-4xl: 3.052rem;
+
+  --font-display: "Fraunces", ui-serif, Georgia, serif;
+  --font-mono: "Space Mono", ui-monospace, "SFMono-Regular", monospace;
+
+  /* Spacing scale */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+  --space-24: 6rem;
+
+  /* Motion durations, referenced by components, never hardcoded inline */
+  --dur-plate: 280ms;
+  --dur-label: 140ms;
+  --dur-expand: 650ms;
+  --dur-rails-in: 300ms;
+  --dur-scrim: 200ms;
+  --dur-lighttable-open: 220ms;
+  --dur-lighttable-nav: 160ms;
+  --dur-polaroid-rise: 450ms;
+  --dur-polaroid-develop: 2400ms;
+  --dur-reduced-crossfade: 150ms;
+}
+
+/* Atmosphere plate treatment. §4 — never bake this into the file itself. */
+.plate {
+  filter: brightness(0.32) contrast(0.95) saturate(0.6);
+}
+
+/* Shared grain overlay, tiling SVG feTurbulence, very low opacity. */
+.grain-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.06;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-plate: 0ms;
+    --dur-label: 0ms;
+    --dur-expand: 0ms;
+    --dur-rails-in: 0ms;
+    --dur-scrim: 0ms;
+    --dur-lighttable-open: 0ms;
+    --dur-lighttable-nav: 0ms;
+    --dur-polaroid-rise: 0ms;
+    --dur-polaroid-develop: 0ms;
+  }
+}

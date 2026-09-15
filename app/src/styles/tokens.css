@@ -19,6 +19,7 @@
 
   --font-display: "Fraunces", ui-serif, Georgia, serif;
   --font-mono: "Space Mono", ui-monospace, "SFMono-Regular", monospace;
+  --font-hand: "Caveat", cursive;
 
   /* Spacing scale */
   --space-1: 0.25rem;

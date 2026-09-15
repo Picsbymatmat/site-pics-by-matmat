@@ -7,9 +7,9 @@
 }
 
 .category-view-bar {
-  position: sticky;
-  top: 0;
-  z-index: 10;
+  /* Scrolls with the page (not sticky) so it disappears behind the nav
+     bar — which sits higher in z-index — instead of squishing up next
+     to it when the user scrolls up. */
   display: flex;
   padding: var(--space-4) var(--space-4) 0;
 }
@@ -105,18 +105,6 @@
   aspect-ratio: 4 / 5;
 }
 
-.category-frame-sprocket {
-  flex: none;
-  width: 6px;
-  background-image: repeating-linear-gradient(
-    to bottom,
-    var(--rule) 0,
-    var(--rule) 6px,
-    transparent 6px,
-    transparent 12px
-  );
-}
-
 .category-rail-rule {
   display: flex;
   align-items: center;
@@ -139,28 +127,6 @@
 .category-empty-text {
   color: var(--muted);
   font-size: var(--text-lg);
-}
-
-.category-view-cta {
-  display: flex;
-  justify-content: center;
-  padding: var(--space-16) var(--space-4) 0;
-}
-
-.category-book {
-  background: transparent;
-  border: 1px solid var(--accent);
-  color: var(--accent);
-  font-family: var(--font-mono);
-  font-size: var(--text-base);
-  padding: var(--space-4) var(--space-8);
-  min-height: 44px;
-  cursor: pointer;
-}
-
-.category-book:hover {
-  background: var(--accent);
-  color: var(--bg);
 }
 
 @media (prefers-reduced-motion: reduce) {

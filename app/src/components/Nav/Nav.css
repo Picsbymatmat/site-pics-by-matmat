@@ -1,0 +1,42 @@
+/* Nav — thin, text-only, present throughout. §3. */
+
+.nav {
+  position: sticky;
+  top: 0;
+  /* Higher than any in-page back-link bar (z-index: 10) so this nav
+     visually obscures those as they scroll up underneath it, instead of
+     the two stacking side by side. */
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-4) var(--space-6);
+  background: transparent;
+  border-bottom: 1px solid transparent;
+  transition: border-color var(--dur-label) ease;
+}
+
+.nav--scrolled {
+  border-bottom-color: var(--rule);
+  background: var(--bg);
+}
+
+.nav--hidden {
+  display: none;
+}
+
+.nav__book {
+  color: var(--accent);
+  font-size: var(--text-sm);
+  text-decoration: none;
+}
+
+.nav__instagram {
+  color: var(--muted);
+  font-size: var(--text-sm);
+  text-decoration: none;
+}
+
+a.nav__instagram:hover {
+  color: var(--ink);
+}

@@ -2,6 +2,7 @@ import { useCallback, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import content from "../../data/content.json";
 import { CATEGORIES, CATEGORY_BY_SLUG } from "../../data/categories";
+import CalendarEmbed from "./CalendarEmbed";
 import type {
   BookingPayload,
   BrandFields,
@@ -57,6 +58,12 @@ type SharedFieldName = keyof SharedFieldValues;
 const SHARED_REQUIRED: SharedFieldName[] = ["name", "email", "phone", "preferredDate"];
 
 type SubmitStatus = "idle" | "pending" | "failure";
+
+// Paused for testing convenience per client feedback: required-field and
+// format errors still compute and display normally (on blur, as usual),
+// but no longer block submission — only a chosen category does, since the
+// payload is meaningless without one. Flip back to true before launch.
+const BLOCK_SUBMIT_ON_VALIDATION_ERRORS = false;
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -152,7 +159,7 @@ export default function CallSheet({ presetCategory, onCategoryChange, onSuccess 
       preferredDate: true,
     }));
 
-    if (!category || !isValid) return;
+    if (!category || (BLOCK_SUBMIT_ON_VALIDATION_ERRORS && !isValid)) return;
 
     const webhookUrl = import.meta.env.VITE_BOOKING_WEBHOOK_URL as string | undefined;
 
@@ -181,7 +188,7 @@ export default function CallSheet({ presetCategory, onCategoryChange, onSuccess 
       if (!res.ok) throw new Error(`Webhook responded ${res.status}`);
       setStatus("idle");
       setSuccess(true);
-      onSuccess(category);
+      onSuccess(payload);
     } catch {
       setStatus("failure");
     }
@@ -291,6 +298,11 @@ export default function CallSheet({ presetCategory, onCategoryChange, onSuccess 
           onChange={setSharedField}
           onBlur={blurShared}
         />
+        <div className="call-sheet__calendar">
+          <h3 className="call-sheet__calendar-heading">{content.copy["calendar.heading"]}</h3>
+          <CalendarEmbed />
+        </div>
+
         <SharedRow
           field="location"
           label="LOCATION"

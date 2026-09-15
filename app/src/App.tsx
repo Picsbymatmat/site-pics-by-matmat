@@ -1,16 +1,29 @@
-import content from "./data/content.json";
+import { useState } from "react";
+import { Route, Routes } from "react-router-dom";
+import Nav from "./components/Nav/Nav";
+import Landing from "./components/Landing/Landing";
+import BookingRoute from "./components/BookingRoute/BookingRoute";
+import SuccessPage from "./components/SuccessPage/SuccessPage";
 
-// Phase 2 (orchestrator) wires the real composition: nav, landing fan,
-// CategoryView, CallSheet routing, Polaroid. This stub only proves the
-// Phase 0 contracts (styles, types, data) load correctly before Phase 1
-// component agents are dispatched.
 export default function App() {
+  const [lightTableOpen, setLightTableOpen] = useState(false);
+
   return (
-    <main style={{ padding: "var(--space-8)" }}>
-      <h1 style={{ fontSize: "var(--text-3xl)" }}>{content.copy["landing.heading"]}</h1>
-      <p className="mono" style={{ color: "var(--muted)", marginTop: "var(--space-4)" }}>
-        Phase 0 scaffold. Components land in Phase 1.
-      </p>
-    </main>
+    <>
+      <Nav hidden={lightTableOpen} />
+      <Routes>
+        <Route path="/" element={<Landing onLightTableChange={setLightTableOpen} />} />
+        {/* Hidden comparison layout, not linked from anywhere in the UI —
+            landscape-aspect frames, 4 per strip, vs. the real site's
+            portrait/2-per-strip fan. */}
+        <Route
+          path="/alt"
+          element={<Landing onLightTableChange={setLightTableOpen} variant="horizontal" />}
+        />
+        <Route path="/book" element={<BookingRoute />} />
+        <Route path="/book/:category" element={<BookingRoute />} />
+        <Route path="/success" element={<SuccessPage />} />
+      </Routes>
+    </>
   );
 }

@@ -111,6 +111,27 @@
   cursor: default;
 }
 
+.call-sheet__calendar {
+  padding: var(--space-4) 0;
+  border-top: 1px solid var(--rule);
+}
+
+.call-sheet__calendar-heading {
+  font-size: var(--text-lg);
+  font-weight: 400;
+  margin-bottom: var(--space-4);
+}
+
+.call-sheet__calendar-pending {
+  color: var(--muted);
+  font-size: var(--text-sm);
+}
+
+.call-sheet__calendar-embed {
+  width: 100%;
+  min-height: 22rem;
+}
+
 .call-sheet--success {
   text-align: center;
   padding: var(--space-12) var(--space-8);

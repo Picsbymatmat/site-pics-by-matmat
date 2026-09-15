@@ -192,9 +192,7 @@ export default function LightTable({ frames, index, onClose, onNavigate, reduced
           <div className="lighttable-track" ref={trackRef} onScroll={handleTrackScroll}>
             {frames.map((f, i) => (
               <div className="lighttable-frame lighttable-frame--snap" key={f.src + i}>
-                <span className="lighttable-sprocket lighttable-sprocket--left" aria-hidden="true" />
                 <img src={f.src} alt={f.alt} width={f.w} height={f.h} />
-                <span className="lighttable-sprocket lighttable-sprocket--right" aria-hidden="true" />
                 <span className="lighttable-framenumber mono">{frameNumber(i)}</span>
               </div>
             ))}
@@ -202,9 +200,7 @@ export default function LightTable({ frames, index, onClose, onNavigate, reduced
         ) : (
           <div className="lighttable-frame-wrap">
             <div className="lighttable-frame" key={frame.src}>
-              <span className="lighttable-sprocket lighttable-sprocket--left" aria-hidden="true" />
               <img src={frame.src} alt={frame.alt} width={frame.w} height={frame.h} />
-              <span className="lighttable-sprocket lighttable-sprocket--right" aria-hidden="true" />
               <span className="lighttable-framenumber mono">{frameNumber(index)}</span>
             </div>
           </div>

@@ -83,10 +83,12 @@
 
 .polaroid__margin {
   margin: 0;
-  padding-top: 6%;
+  padding: 6% var(--space-4) var(--space-4);
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: var(--space-1);
   min-height: 2.75em;
 }
 
@@ -97,6 +99,11 @@
   line-height: 1.2;
   color: #2a2620;
   text-align: center;
+}
+
+.polaroid__hand--subtitle {
+  font-size: var(--text-lg);
+  color: #55503f;
 }
 
 @media (max-width: 768px) {

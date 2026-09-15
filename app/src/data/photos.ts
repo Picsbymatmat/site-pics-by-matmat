@@ -1,19 +1,33 @@
 import type { PhotoManifest } from "../types";
 
 /**
- * Placeholder manifest for Milestone 1 development, before Cloudinary is
- * wired to Matt's real folders (§11) and before he supplies photography
- * (§15). Two categories (brand, portrait) reuse a single real photo across
- * frame/plate/hero, per an explicit interim call — not the final asset
- * count (15–25 per category). Product and event have no usable real photo
- * yet: frames is empty and plate/hero are null on purpose, so components
- * must render their defined placeholder/empty states rather than break.
+ * Interim manifest, one real photo per category (frame + hero) plus a
+ * distinct atmosphere plate, ahead of Cloudinary (§11) and Matt's full
+ * photo delivery (§15: 15-25 per category). Not the final asset count —
+ * components must still handle frames arrays of any length.
  */
 export const PHOTOS: PhotoManifest = {
   product: {
-    frames: [],
-    plate: null,
-    hero: null,
+    frames: [
+      {
+        src: "/images/placeholder/product/01-product.jpg",
+        alt: "Product photography, studio still life.",
+        w: 600,
+        h: 900,
+      },
+    ],
+    plate: {
+      src: "/images/placeholder/product/01-product-plate.jpg",
+      alt: "",
+      w: 800,
+      h: 1000,
+    },
+    hero: {
+      src: "/images/placeholder/product/01-product.jpg",
+      alt: "Product photography, studio still life.",
+      w: 600,
+      h: 900,
+    },
   },
   brand: {
     frames: [
@@ -25,10 +39,10 @@ export const PHOTOS: PhotoManifest = {
       },
     ],
     plate: {
-      src: "/images/placeholder/brand/01-brand.jpg",
+      src: "/images/placeholder/brand/01-brand-plate.jpg",
       alt: "",
-      w: 600,
-      h: 750,
+      w: 1200,
+      h: 800,
     },
     hero: {
       src: "/images/placeholder/brand/01-brand.jpg",
@@ -38,9 +52,26 @@ export const PHOTOS: PhotoManifest = {
     },
   },
   event: {
-    frames: [],
-    plate: null,
-    hero: null,
+    frames: [
+      {
+        src: "/images/placeholder/event/01-event.jpg",
+        alt: "Event photography, live coverage.",
+        w: 600,
+        h: 900,
+      },
+    ],
+    plate: {
+      src: "/images/placeholder/event/01-event-plate.jpg",
+      alt: "",
+      w: 600,
+      h: 900,
+    },
+    hero: {
+      src: "/images/placeholder/event/01-event.jpg",
+      alt: "Event photography, live coverage.",
+      w: 600,
+      h: 900,
+    },
   },
   portrait: {
     frames: [
@@ -52,7 +83,7 @@ export const PHOTOS: PhotoManifest = {
       },
     ],
     plate: {
-      src: "/images/placeholder/portrait/01-portrait.jpg",
+      src: "/images/placeholder/portrait/01-portrait-plate.jpg",
       alt: "",
       w: 600,
       h: 900,

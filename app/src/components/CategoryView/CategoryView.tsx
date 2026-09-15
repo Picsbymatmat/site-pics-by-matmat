@@ -8,10 +8,23 @@ const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
 
 // Rates from spec §6 "Rails". Index order matches row order.
 const PARALLAX_RATES = [-0.35, 0.22, -0.5];
+// Starting offset into `frames` for each row — the middle row starts one
+// frame further along ("one more image to the left") so it doesn't open
+// on the same frame as the top row.
+const ROW_OFFSETS = [0, 2, 2];
+// Extra frames appended to each row's target length, per row index — one
+// more added to every row (the third row now carries two extra on top of
+// the shared baseline).
+const ROW_EXTRA = [1, 1, 2];
 // Scales raw scrollY into a translate distance; keeps the drift readable
 // without letting a tall page fling rails far off-screen.
 const PARALLAX_SCALE = 0.4;
 const PARALLAX_CLAMP = 480;
+// Baseline shift applied to every row before scroll-linked parallax, so
+// rails open already scrolled halfway into the first frame (matches
+// .category-frame's fixed desktop width) rather than starting flush on
+// its left edge.
+const PARALLAX_INITIAL_OFFSET = -120;
 
 interface RailItem {
   frame: PhotoAsset;
@@ -54,7 +67,12 @@ function railMarkings(row: RailItem[]): string {
   return `→${numbers.join(" ")}`;
 }
 
-export default function CategoryView({ category, frames, onReturn, onBook }: CategoryViewProps) {
+export default function CategoryView({
+  category,
+  frames,
+  onReturn,
+  onLightTableChange,
+}: CategoryViewProps) {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
   const [isMobile, setIsMobile] = useState(
     () => typeof window !== "undefined" && window.matchMedia(MOBILE_QUERY).matches,
@@ -83,7 +101,7 @@ export default function CategoryView({ category, frames, onReturn, onBook }: Cat
   const rows = useMemo(() => {
     if (frames.length === 0) return [];
     const targetLength = Math.max(frames.length, 6);
-    return PARALLAX_RATES.map((_, i) => buildRow(frames, i, targetLength));
+    return ROW_OFFSETS.map((offset, i) => buildRow(frames, offset, targetLength + ROW_EXTRA[i]));
   }, [frames]);
 
   // Single shared rAF loop driving all rows' parallax, per spec §6 ("one
@@ -100,7 +118,7 @@ export default function CategoryView({ category, frames, onReturn, onBook }: Cat
         if (!el) return;
         const rate = PARALLAX_RATES[i] ?? 0;
         const x = clamp(y * rate * PARALLAX_SCALE, -PARALLAX_CLAMP, PARALLAX_CLAMP);
-        el.style.transform = `translate3d(${x}px, 0, 0)`;
+        el.style.transform = `translate3d(${PARALLAX_INITIAL_OFFSET + x}px, 0, 0)`;
       });
       rafId = requestAnimationFrame(tick);
     };
@@ -118,11 +136,54 @@ export default function CategoryView({ category, frames, onReturn, onBook }: Cat
     }
   }, [isMobile, reducedMotion]);
 
-  const openLightTable = useCallback((originalIndex: number, el: HTMLElement) => {
-    savedScrollY.current = window.scrollY;
-    lastActivatedEl.current = el;
-    setOpenIndex(originalIndex);
-  }, []);
+  // Mobile rails read as infinitely repeating while side-scrolling: each
+  // row's frame sequence is tripled, the scroll position starts at the
+  // middle copy, and crossing into the first or last copy jumps back to
+  // the middle copy by exactly one set's width — imperceptible since the
+  // three copies are identical, so the loop has no visible seam.
+  const displayRows = useMemo(() => {
+    if (!isMobile) return rows;
+    return rows.map((row) => [...row, ...row, ...row]);
+  }, [rows, isMobile]);
+
+  useEffect(() => {
+    if (!isMobile || rows.length === 0) return;
+
+    const tracks = rowRefs.current.filter((el): el is HTMLDivElement => el !== null);
+
+    // Start each track scrolled to its middle copy.
+    tracks.forEach((el) => {
+      el.scrollLeft = el.scrollWidth / 3;
+    });
+
+    const handlers = tracks.map((el) => {
+      const handleScroll = () => {
+        const oneSet = el.scrollWidth / 3;
+        if (oneSet <= 0) return;
+        if (el.scrollLeft < oneSet * 0.5) {
+          el.scrollLeft += oneSet;
+        } else if (el.scrollLeft > oneSet * 1.5) {
+          el.scrollLeft -= oneSet;
+        }
+      };
+      el.addEventListener("scroll", handleScroll, { passive: true });
+      return { el, handleScroll };
+    });
+
+    return () => {
+      handlers.forEach(({ el, handleScroll }) => el.removeEventListener("scroll", handleScroll));
+    };
+  }, [isMobile, rows]);
+
+  const openLightTable = useCallback(
+    (originalIndex: number, el: HTMLElement) => {
+      savedScrollY.current = window.scrollY;
+      lastActivatedEl.current = el;
+      setOpenIndex(originalIndex);
+      onLightTableChange?.(true);
+    },
+    [onLightTableChange],
+  );
 
   const closeLightTable = useCallback(() => {
     setOpenIndex(null);
@@ -133,7 +194,8 @@ export default function CategoryView({ category, frames, onReturn, onBook }: Cat
       window.scrollTo(0, savedScrollY.current);
     }
     lastActivatedEl.current?.focus();
-  }, []);
+    onLightTableChange?.(false);
+  }, [onLightTableChange]);
 
   const navigateLightTable = useCallback((next: number) => {
     setOpenIndex(next);
@@ -153,7 +215,7 @@ export default function CategoryView({ category, frames, onReturn, onBook }: Cat
 
       {hasFrames ? (
         <div className="category-rails" aria-label={`${category.label} photographs`}>
-          {rows.map((row, rowIndex) => (
+          {displayRows.map((row, rowIndex) => (
             <div className="category-rail-block" key={rowIndex}>
               <div
                 className="category-rail-track"
@@ -165,11 +227,10 @@ export default function CategoryView({ category, frames, onReturn, onBook }: Cat
                   <button
                     type="button"
                     className="category-frame"
-                    key={`${item.originalIndex}-${itemIndex}`}
+                    key={`${itemIndex}-${item.originalIndex}`}
                     onClick={(e) => openLightTable(item.originalIndex, e.currentTarget)}
                     aria-label={`Open photograph ${frameLabel(item.originalIndex)}: ${item.frame.alt}`}
                   >
-                    <span className="category-frame-sprocket" aria-hidden="true" />
                     <img
                       src={item.frame.src}
                       alt={item.frame.alt}
@@ -177,11 +238,10 @@ export default function CategoryView({ category, frames, onReturn, onBook }: Cat
                       height={item.frame.h}
                       loading="lazy"
                     />
-                    <span className="category-frame-sprocket" aria-hidden="true" />
                   </button>
                 ))}
               </div>
-              {rowIndex < rows.length - 1 && (
+              {rowIndex < displayRows.length - 1 && (
                 <div className="category-rail-rule mono" aria-hidden="true">
                   {railMarkings(row)}
                 </div>
@@ -197,12 +257,6 @@ export default function CategoryView({ category, frames, onReturn, onBook }: Cat
           </p>
         </div>
       )}
-
-      <div className="category-view-cta">
-        <button type="button" className="category-book" onClick={() => onBook(category.key)}>
-          Book this shoot
-        </button>
-      </div>
 
       {openIndex !== null && (
         <LightTable

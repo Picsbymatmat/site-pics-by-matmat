@@ -4,15 +4,16 @@
   "copy": {
     "nav.book": "Book",
     "nav.instagram": "Instagram",
-    "landing.heading": "Book a shoot.",
+    "landing.heading": "Pick a shot.",
     "landing.portfolioLink": "See more work",
+    "landing.backLink": "Pick a shot",
     "callsheet.presetHeading": "Shoot type — {category}",
     "callsheet.firstFieldLabel": "SHOOT TYPE",
     "callsheet.aboveForm": "Tell Matt what you're planning.",
     "calendar.heading": "When works for you?",
     "submit.default": "Send to Matt",
     "submit.pending": "Sending",
-    "confirmation.message": "Got it. Matt will text you to confirm the date.",
+    "confirmation.message": "I'll get back to you to confirm the time.",
     "failure.message": "That didn't send. Check your connection and try again."
   },
   "portfolioLinks": [

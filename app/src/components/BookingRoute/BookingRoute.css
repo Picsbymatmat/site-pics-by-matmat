@@ -1,0 +1,26 @@
+.booking-route {
+  min-height: 100vh;
+}
+
+.booking-route__bar {
+  /* Scrolls with the page (not sticky) — disappears behind the nav bar
+     as the user scrolls up, matching CategoryView's back-link. */
+  display: flex;
+  padding: var(--space-4) var(--space-4) 0;
+}
+
+.booking-route__back {
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  font-size: var(--text-sm);
+  padding: var(--space-2) var(--space-3);
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+}
+
+.booking-route__back:hover {
+  color: var(--accent);
+}

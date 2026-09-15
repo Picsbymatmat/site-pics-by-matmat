@@ -20,7 +20,7 @@ function readDurationMs(varName: string, fallback: number): number {
   return raw.endsWith("s") && !raw.endsWith("ms") ? parsed * 1000 : parsed;
 }
 
-export default function Polaroid({ category, hero, reducedMotion }: PolaroidProps) {
+export default function Polaroid({ category, hero, reducedMotion, subtitleLines }: PolaroidProps) {
   // risen: frame has completed (or, under reduced motion, skipped) its rise.
   // developed: image/tint has completed (or skipped) its develop.
   const [risen, setRisen] = useState(reducedMotion);
@@ -100,6 +100,11 @@ export default function Polaroid({ category, hero, reducedMotion }: PolaroidProp
         </div>
         <figcaption className="polaroid__margin">
           <p className="polaroid__hand">{CONFIRMATION_LINE}</p>
+          {subtitleLines?.map((line, i) => (
+            <p className="polaroid__hand polaroid__hand--subtitle" key={i}>
+              {line}
+            </p>
+          ))}
         </figcaption>
       </div>
     </figure>

@@ -1,0 +1,132 @@
+/* Landing — the four-strip fan and its atmosphere plate. §3, §4, §6, §7. */
+
+.category-page {
+  display: flex;
+  flex-direction: column;
+}
+
+#inline-booking {
+  padding-top: var(--space-8);
+  border-top: 1px solid var(--rule);
+}
+
+.landing {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+}
+
+.landing-plate-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: var(--bg);
+}
+
+.landing-plate {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  animation: landing-plate-in var(--dur-plate) ease forwards;
+}
+
+@keyframes landing-plate-in {
+  to {
+    opacity: 1;
+  }
+}
+
+.landing-plate-vignette {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, transparent 30%, var(--bg) 90%);
+}
+
+.landing-content {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  padding: var(--space-16) var(--space-6);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-12);
+}
+
+.landing-heading {
+  font-size: var(--text-3xl);
+  font-family: var(--font-display);
+  font-weight: 700;
+  text-align: center;
+  margin: 0;
+}
+
+.landing-fan {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.landing-fan__strip {
+  margin-left: -0.75rem;
+}
+
+.landing-fan__strip:first-child {
+  margin-left: 0;
+}
+
+.landing-portfolio-link {
+  color: var(--muted);
+  font-size: var(--text-sm);
+  text-decoration: none;
+}
+
+.landing-portfolio-link:hover {
+  color: var(--ink);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-plate {
+    animation: none;
+    opacity: 1;
+  }
+}
+
+@media (max-width: 767px) {
+  .landing {
+    align-items: flex-start;
+  }
+
+  .landing-content {
+    padding: var(--space-8) var(--space-4);
+    gap: var(--space-8);
+  }
+
+  .landing-fan {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .landing-fan__strip {
+    margin-left: 0;
+    margin-top: -0.375rem;
+    width: 100%;
+  }
+
+  .landing-fan__strip:first-child {
+    margin-top: 0;
+  }
+
+  /* Full-bleed strips on mobile (§7), overriding Filmstrip's default
+     content-sized width — a layout concern that belongs to whoever
+     composes the fan, per Filmstrip.css's own note. */
+  .landing-fan__strip .filmstrip,
+  .landing-fan__strip .filmstrip-frames {
+    width: 100%;
+  }
+}

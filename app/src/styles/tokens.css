@@ -1,11 +1,14 @@
 :root {
-  /* Colour — one palette, site-wide. §4 */
-  --bg: #0e0e10;
-  --surface: #18181c;
+  /* Colour — one palette, site-wide. §4. Lightened from the original
+     near-black values after client feedback that black-on-black-on-black
+     was hard to read; still dark, just with more separation between bg,
+     surface, and rule. */
+  --bg: #19191c;
+  --surface: #242428;
   --ink: #f2f0ec;
   --muted: #8c8981;
   --accent: #c08a4a;
-  --rule: #2a2a30;
+  --rule: #38383f;
 
   /* Type scale, 1.25 ratio. §5 */
   --text-xs: 0.75rem;
@@ -45,9 +48,12 @@
   --dur-reduced-crossfade: 150ms;
 }
 
-/* Atmosphere plate treatment. §4 — never bake this into the file itself. */
+/* Atmosphere plate treatment. §4 — never bake this into the file itself.
+   Lightened and blurred after client feedback: less darkening than the
+   original, plus a blur so the plate reads as atmosphere rather than a
+   legible photograph competing with the filmstrips in front of it. */
 .plate {
-  filter: brightness(0.32) contrast(0.95) saturate(0.6);
+  filter: brightness(0.48) contrast(0.9) saturate(0.55) blur(6px);
 }
 
 /* Shared grain overlay, tiling SVG feTurbulence, very low opacity. */

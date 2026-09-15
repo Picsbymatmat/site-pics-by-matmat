@@ -135,13 +135,19 @@ sees when Matt is free, and requests a date in one motion.
 
 ### Confirmation
 
-The call sheet clears and a Polaroid rises into its place, blank, then develops over
-roughly two and a half seconds from flat grey to full colour. In the white margin below
-the frame, handwritten:
+Submitting takes the visitor to a standalone confirmation page (`/success`, no category
+in the URL — there is nothing category-specific left to link to directly). A Polaroid
+rises into place, blank, then develops over roughly two and a half seconds from flat grey
+to a plain tint — no photograph, the card itself is the content. In the white margin,
+handwritten:
 
-> Got it. Matt will text you to confirm the date.
+> I'll get back to you to confirm the time.
+>
+> {{category of shoot}}   {{date of shoot}}
+> {{location of shoot}}
 
-The developing photograph is from the category the visitor chose.
+The location line is omitted if none was given. Below the card, a quiet link back to the
+landing page.
 
 ### Below the fold
 
@@ -159,12 +165,12 @@ restrained palette across the whole site, with all colour coming from Matt's wor
 
 | Token | Hex | Use |
 | --- | --- | --- |
-| `--bg` | `#0E0E10` | page |
-| `--surface` | `#18181C` | call sheet, cards |
+| `--bg` | `#19191C` | page |
+| `--surface` | `#242428` | call sheet, cards |
 | `--ink` | `#F2F0EC` | body text, warm off-white |
 | `--muted` | `#8C8981` | secondary text, field labels |
 | `--accent` | `#C08A4A` | actions, focus rings, active states |
-| `--rule` | `#2A2A30` | hairlines, film edges, borders |
+| `--rule` | `#38383F` | hairlines, film edges, borders |
 
 **Why dark:** photographs are the only source of colour on the page and they sit
 strongest against near-black. It also suits the professional repositioning — his product
@@ -177,7 +183,7 @@ of the screen is accent-coloured, it is wrong.
 **Atmosphere plates** behind the landing fan are treated, never shown raw:
 
 ```css
-filter: brightness(0.32) contrast(0.95) saturate(0.6);
+filter: brightness(0.48) contrast(0.9) saturate(0.55) blur(6px);
 /* plus the shared grain overlay */
 /* plus a radial-gradient mask for the vignette — never bake the fade into the file */
 ```
@@ -391,16 +397,16 @@ affects order, how long changes take to appear.
 ## 12. Copy
 
 - **Nav:** `Book`, `Instagram`
-- **Landing heading:** `Book a shoot.`
+- **Landing heading:** `Pick a shot.`
 - **Call sheet, category preset:** `Shoot type — {category}`
 - **Call sheet, first field when arriving direct:** `SHOOT TYPE`
-- **Strip labels:** `Professional & product`, `Brand & lifestyle`, `Events`, `Portraits`
+- **Strip labels:** `Product`, `Event`, `Brand`, `Portrait`
 - **Landing portfolio link:** `See more work`
 - **Above the call sheet:** `Tell Matt what you're planning.`
 - **Calendar heading:** `When works for you?`
 - **Submit control:** `Send to Matt`
 - **Pending:** `Sending`
-- **Confirmation:** `Got it. Matt will text you to confirm the date.`
+- **Confirmation:** `I'll get back to you to confirm the time.`, subtitle `{{category of shoot}}   {{date of shoot}}` then `{{location of shoot}}` on its own line (omitted if no location was given)
 - **Failure:** `That didn't send. Check your connection and try again.`
 
 Sentence case throughout except call sheet labels and film markings. Active voice. Submit
@@ -503,7 +509,8 @@ Build Phase 1 in the listed order. Nothing depends on parallelism.
 - [ ] Testimonials beside the form filter by shoot type and fall back gracefully when a
       category has none.
 - [ ] Calendar renders and is usable at 375px.
-- [ ] Polaroid develops on success with the chosen category's photograph.
+- [ ] Polaroid develops on `/success` with the booking's category, date, and (if given)
+      location as the handwritten subtitle.
 - [ ] New photos uploaded to Cloudinary appear without a redeploy.
 - [ ] Every photograph opens on the light table and is navigable and closable by keyboard
       alone, with focus returned to its originating frame.
@@ -544,3 +551,40 @@ Build Phase 1 in the listed order. Nothing depends on parallelism.
 - Whether the Cal.com embed is acceptable aesthetically, or a custom calendar is wanted
   later as separate work.
 - Backend automation beyond the booking webhook is out of scope and priced separately.
+
+---
+
+## 17. Milestones
+
+The phases in §13 describe the build sequence once, start to finish — Phase 3 does not
+repeat. Milestones are a separate, client-facing axis: what "done" means at each delivery
+checkpoint, since the site runs end to end well before every real input exists.
+
+**Milestone 1 — site works end to end against interim inputs.**
+
+- One real photo per category (frame, hero, and a distinct atmosphere plate), not the
+  final 15–25 — enough to prove every component against real photography instead of
+  placeholders.
+- Booking form posts to a webhook URL from an env var; no live n8n workflow behind it
+  yet.
+- Cal.com embed present and functional against a stub/demo configuration; no production
+  account required yet.
+- Supporting section (testimonials, results, portfolio link, contact) may ship empty or
+  deferred — §10's "render nothing for empty sections" rule covers this by design.
+- Everything in the Phase 3 pass (keyboard, reduced-motion, 375px, Lighthouse) holds at
+  Milestone 1, against whatever content exists at the time.
+
+**Milestone 2 — real inputs swap in.**
+
+- Cloudinary account created, Matt has folder upload access, full photo counts per §15.
+- Real n8n workflow behind the webhook URL.
+- Real Cal.com account, configured and themed.
+- Real testimonials and results figures in `content.json`; Agent E (Supporting) built or
+  revisited against them.
+- Re-run the relevant parts of Phase 2 (wiring) and Phase 3 (the pass) against real data
+  — Phase 1 component work does not get redone.
+
+Milestone 2 does not require rebuilding Milestone 1; it is Milestone 1 with placeholders
+replaced. The two are declared here since they carry different sign-off criteria — the
+acceptance criteria in §14 are Milestone 2's bar; Milestone 1 is complete when the same
+flow works using interim inputs without a broken or fabricated state anywhere.

@@ -118,7 +118,8 @@ export interface CategoryViewProps {
   category: CategoryMeta;
   frames: PhotoAsset[];
   onReturn: () => void;
-  onBook: (key: CategoryKey) => void;
+  /** Phase 2: nav must hide while the light table is open (§3, §14). */
+  onLightTableChange?: (open: boolean) => void;
 }
 
 export interface CallSheetProps {
@@ -126,7 +127,7 @@ export interface CallSheetProps {
    *  which case shoot type is the first required field. */
   presetCategory: CategoryKey | null;
   onCategoryChange: (key: CategoryKey) => void;
-  onSuccess: (category: CategoryKey) => void;
+  onSuccess: (payload: BookingPayload) => void;
   /** Milestone 2: omitted/undefined in Milestone 1 builds. Component must
    *  render correctly with this absent — no calendar section, not a broken one. */
   testimonials?: Testimonial[];
@@ -136,6 +137,9 @@ export interface PolaroidProps {
   category: CategoryMeta;
   hero: PhotoAsset | null;
   reducedMotion: boolean;
+  /** Extra lines under the main handwritten message (e.g. category, date,
+   *  location) — the /success page's booking-details subtitle. */
+  subtitleLines?: string[];
 }
 
 export interface SupportingProps {

@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
 import type { PolaroidProps } from "../../types";
-import content from "../../data/content.json";
 import "./Polaroid.css";
 
 // No token exists for the pause between the rise finishing and the develop
@@ -8,8 +7,6 @@ import "./Polaroid.css";
 // Spec §6: "a short delay first so the blank white reads" — this is that
 // pause, kept short and deliberate.
 const DEVELOP_START_DELAY_MS = 300;
-
-const CONFIRMATION_LINE = content.copy["confirmation.message"];
 
 /** Reads a --dur-* CSS custom property in ms, falling back if unset. */
 function readDurationMs(varName: string, fallback: number): number {
@@ -20,7 +17,7 @@ function readDurationMs(varName: string, fallback: number): number {
   return raw.endsWith("s") && !raw.endsWith("ms") ? parsed * 1000 : parsed;
 }
 
-export default function Polaroid({ category, hero, reducedMotion, subtitleLines }: PolaroidProps) {
+export default function Polaroid({ category, hero, reducedMotion }: PolaroidProps) {
   // risen: frame has completed (or, under reduced motion, skipped) its rise.
   // developed: image/tint has completed (or skipped) its develop.
   const [risen, setRisen] = useState(reducedMotion);
@@ -88,6 +85,17 @@ export default function Polaroid({ category, hero, reducedMotion, subtitleLines 
             />
           ) : (
             <div className="polaroid__develop">
+              <img
+                className={`polaroid__photo${developed ? " polaroid__photo--developed" : ""}`}
+                src="/images/placeholder/polaroid/develop.png"
+                alt=""
+                aria-hidden="true"
+                style={
+                  reducedMotion
+                    ? undefined
+                    : { transitionDuration: `${developMsForStyle}ms` }
+                }
+              />
               <div
                 className={`polaroid__tint${developed ? " polaroid__tint--developed" : ""}`}
                 style={
@@ -97,27 +105,17 @@ export default function Polaroid({ category, hero, reducedMotion, subtitleLines 
                 }
                 aria-hidden="true"
               />
-              <p
-                className={`polaroid__exposure${developed ? " polaroid__exposure--developed" : ""}`}
-                style={
-                  reducedMotion
-                    ? undefined
-                    : { transitionDuration: `${developMsForStyle}ms` }
-                }
-              >
-                {CONFIRMATION_LINE}
-              </p>
             </div>
           )}
           <div className="grain-overlay" />
         </div>
         <figcaption className="polaroid__margin">
           <div className="polaroid__margin-inner">
-            {subtitleLines?.map((line, i) => (
-              <p className="polaroid__mono mono" key={i}>
-                {line}
-              </p>
-            ))}
+            <img
+              className="polaroid__signature"
+              src="/images/placeholder/polaroid/signature.png"
+              alt="Signature"
+            />
           </div>
         </figcaption>
       </div>

@@ -61,18 +61,25 @@ lead.
 ```json
 {
   "category": "product" | "brand" | "event" | "portrait",
-  "name": "string",
+  "subject": "string",
   "email": "string",
-  "phone": "string",
-  "preferredDate": "YYYY-MM-DD | null",
-  "altDate": "YYYY-MM-DD | null",
-  "location": "string | null",
-  "details": "string | null",
+  "phone": "string | null",
+  "instagram": "string | null",
+  "shootDate": "YYYY-MM-DD | null",
+  "timeSlot": "morning" | "evening" | null,
+  "neededBy": "YYYY-MM-DD | null",
+  "location": "string",
+  "notes": "string | null",
   "categoryFields": { },
   "submittedAt": "ISO-8601 string",
   "source": "picsbymatmat-booking"
 }
 ```
+
+Exactly one of `phone` or `instagram` is required; the other is `null`. `location` is
+required (see §8 — it changed from optional). `preferredDate`/`altDate` from the earlier
+draft are gone, replaced by `shootDate` (from the calendar widget) plus `timeSlot` and the
+separate `neededBy` delivery-target date.
 
 Non-2xx or network error is a failure. Do not clear the form on failure.
 
@@ -82,9 +89,11 @@ Non-2xx or network error is a failure. Do not clear the form on failure.
 
 ### Navigation
 
-A thin bar along the top, present throughout: `Book` in `--accent` and an Instagram link
-in `--muted`, both mono, text only. No background fill, no button chrome, no logo
-lockup, no border until the page is scrolled. It hides while the light table is open.
+Not a bar at all — `Book` in `--accent` and an Instagram link in `--muted-dim`, both mono,
+text only, locked to their corners at the top of the page. No background fill, no button
+chrome, no logo lockup, no border, at rest or scrolled — they scroll away with the rest of
+the page like any other content, rather than sticking. It hides while the light table is
+open.
 
 `Book` opens `/book` with no category chosen and shoot type as the first field. Never
 preselect a category arbitrarily: the same entry point must behave the same way every
@@ -98,7 +107,12 @@ bottom it is a useful exit for people who were not going to book anyway.
 Four vertical filmstrips hang in frame, overlapping in a loose fan rather than evenly
 spaced — as if just set down after being held together in one hand, each angled slightly
 off vertical in alternating directions, resting almost against one another. Each strip
-holds three or four frames from one category, sprocket holes running both edges.
+holds three frames from one category, sprocket holes running both edges.
+
+Portrait (vertical) aspect ratio only, on every strip, everywhere. There is no horizontal
+variant — the earlier alternate horizontal frame set is retired. The whole graphic is
+scaled down from the earlier four-frame strip so three frames fit at a size that still
+reads clearly; do not just crop a frame off the bottom of the old layout.
 
 Under each strip, its category name in mono. This is the only navigation.
 
@@ -108,14 +122,23 @@ hovered strip's label lights up. **No photograph is ever dimmed, desaturated, or
 transformed.** All four strips stay at full grade at all times. His work is never turned
 down to make an interaction feel responsive.
 
-Above the fan, one line of copy and nothing else. Below it, a quiet link for people who
-want to see more work before deciding.
+Above the fan, one line of copy and nothing else. Below it, a quiet, underlined link for
+people who want to see more work before deciding.
+
+On desktop, the whole landing page — nav, heading, fan, link — fits exactly one viewport,
+no scroll. It sizes itself against the nav's real measured height rather than assuming a
+fixed nav size, so this holds regardless of how the nav's own height changes.
 
 ### Category view
 
 The chosen strip expands to fill the screen. Below it, horizontal rails of that
 category's photographs, drifting sideways as the visitor scrolls. Between rails, thin
 film-edge rules carrying frame markings.
+
+There are three rails per category, and each carries its own subtitle naming the kind of
+shot it shows — e.g. for Portraits: candids, posed, details. The subtitle sits with the
+film-edge rule above its rail, mono, quiet, not a heading. Content per category, from
+`content.json`.
 
 Clicking any frame puts it on the light table: the page dims to a scrim, the frame opens
 large with its sprocket edges intact and its frame number in mono in a corner, and the
@@ -138,19 +161,32 @@ sees when Matt is free, and requests a date in one motion.
 Submitting takes the visitor to a standalone confirmation page (`/success`, no category
 in the URL — there is nothing category-specific left to link to directly). A Polaroid
 rises into place, blank, then develops over roughly two and a half seconds from a flat
-undeveloped grey into a warm amber tint — no photograph, the card itself is the content.
-The confirmation line resolves directly on the tint as the exposure, handwritten, not in
-the margin:
+undeveloped grey into Matt's actual hero photograph for that category — a real print now,
+not a tint standing in for one.
+
+Matt supplies each hero photo shot with deliberate open space — sky, wall, negative
+space in the frame — so there is somewhere for text to sit without covering the subject.
+The confirmation line develops directly into that whitespace, on the photograph itself,
+handwritten:
 
 > Got it. I'll text you to lock in the time.
 
-Below the print's border, a plain mono caption (not handwritten):
+In the white margin below the print's border — the traditional blank strip at the bottom
+of a Polaroid — two things, stacked: the plain mono caption, and beneath it a generated
+autograph-style sign-off, in a script hand rather than the confirmation line's print-hand,
+as if Matt signed the print himself:
 
 > {{category of shoot}} - {{date of shoot}}
 > {{location of shoot}}
+>
+> *Thank you for booking with me. Love, Matmat*
 
-The location line is omitted if none was given. Below the card, a quiet link back to the
-landing page.
+Location is now a required field (§8), so this line is always present. The sign-off is
+static, the same on every card — it is not personalized per booking. Below the card, a
+quiet link back to the landing page.
+
+Like the landing page, `/success` fits exactly one viewport on desktop, no scroll — sized
+against the nav's real measured height, same as landing.
 
 **Proportions match a real Polaroid 600 print, to the mm:**
 
@@ -164,12 +200,19 @@ caption strip:             77 x   17mm    → aspect-ratio 77 / 17
 The border is a uniform matte on all sides — the caption strip is a distinct region
 below it, sized by its own aspect ratio, not by lopsided frame padding.
 
-The developed tint (no hero photograph exists yet for any category):
+**Current build, interim (not the target state described above):** no per-category hero
+photo exists yet, so the develop still resolves into a generic placeholder image (birds on
+a wire) with a warm tint overlaid at partial opacity rather than full-grade photography,
+and the confirmation line is baked into that placeholder image rather than live text. The
+margin below the border currently holds only a supplied signature image — no mono caption,
+no live category/date/location text, no separate script sign-off — a first step toward the
+sign-off described above, not the finished version. The proportions have also been tuned
+away from the literal real-print mm above, as currently built: `2%` border padding
+(was `6.4972%`), `77 / 78` image window (was `77 / 79`), `77 / 18` caption strip
+(was `77 / 17`), and the card itself scaled down another 10% (`min(378px, 90vw)`).
 
-```css
-background: linear-gradient(115deg, #8a8a86 0%, #8a8a86 24%, #b98f57 50%, var(--accent) 75%, #8a5b26 100%);
-/* opacity 0 -> 1 over the develop duration, revealing this gradient above the flat grey */
-```
+The develop crossfades from a flat, undeveloped grey to the hero photograph at full
+grade — no gradient stand-in.
 
 ### Below the fold
 
@@ -190,7 +233,8 @@ restrained palette across the whole site, with all colour coming from Matt's wor
 | `--bg` | `#19191C` | page |
 | `--surface` | `#242428` | call sheet, cards |
 | `--ink` | `#F2F0EC` | body text, warm off-white |
-| `--muted` | `#8C8981` | secondary text, field labels |
+| `--muted` | `#E8E6E0` | secondary text, field labels — near-white, not grey |
+| `--muted-dim` | `#8C8981` | the original grey `--muted` value, kept only for a couple of deliberately quieter links (nav Instagram, landing "See more work", success page's back link) |
 | `--accent` | `#C08A4A` | actions, focus rings, active states |
 | `--rule` | `#38383F` | hairlines, film edges, borders |
 
@@ -220,7 +264,11 @@ size.
 
 - **Fraunces** (variable) — display and headings. Heavy weight, tight tracking.
 - **Space Mono** — film edge markings, category labels, call sheet field labels, frame
-  numbers. Nothing else.
+  numbers, the Polaroid's caption line. Nothing else.
+- **Caveat** — the Polaroid confirmation line only, written as if in marker on the print.
+- **A separate script face** (e.g. Mrs Saint Delafield) for the autograph sign-off in the
+  Polaroid's bottom margin — deliberately not Caveat, so the sign-off reads as an actual
+  signature rather than more of the same handwriting.
 
 Body copy is Fraunces at a lighter weight and looser leading. There is little body copy
 here and giving it to the serif keeps things cohesive.
@@ -248,10 +296,13 @@ One moment gets real budget. Everything else is quiet or absent.
 
 **The Polaroid developing.** The frame rises from below over 450ms (settling at a slight
 -2° tilt, like a print set down by hand), then over 2400ms the image crossfades from flat
-grey to the developed tint and the handwritten confirmation line fades and sharpens in
-step with it — one resolving exposure, not two separate animations. A short delay first
-so the blank grey reads before developing starts. Film grain and the print's vignette are
-present throughout, undisturbed by the crossfade. This is the only place motion is the
+grey to Matt's hero photograph at full grade, and the handwritten confirmation line —
+resolving into the photo's own negative space, not overlaid on top of the subject — fades
+and sharpens in step with it, one resolving exposure, not two separate animations. A short
+delay first so the blank grey reads before developing starts. Film grain and the print's
+vignette are present throughout, undisturbed by the crossfade. The mono caption and the
+signature in the bottom margin are present from the start, not part of the develop — only
+the photograph and the line written on it develop. This is the only place motion is the
 point.
 
 ### Everything else
@@ -298,7 +349,8 @@ Built first, not adapted. Most visitors arrive here from Instagram.
   zoom, 44px minimum tap targets.
 - **Calendar:** the embed must be usable at 375px. Test it early; this is the most likely
   thing to be broken on a phone.
-- **Polaroid:** same animation, sized to 90vw (max 440px), same real-print proportions.
+- **Polaroid:** same animation, sized to 90vw (max 378px — see the interim proportions
+  note under Confirmation), same real-print-derived proportions.
 
 Breakpoint at 768px.
 
@@ -323,11 +375,29 @@ Shared fields, all categories:
 | --- | --- | --- |
 | SUBJECT | name | yes |
 | EMAIL | email | yes |
-| PHONE | phone (tel) | yes |
-| PREFERRED DATE | preferredDate | yes |
-| ALTERNATE DATE | altDate | no |
-| LOCATION | location | no |
-| NOTES | details (textarea) | no |
+| PHONE | phone (tel) | one of phone/Instagram |
+| INSTAGRAM | instagram | one of phone/Instagram |
+| SHOOT DATE | shootDate + timeSlot (calendar widget, §9) | yes |
+| NEEDED BY | neededBy | yes |
+| LOCATION / AREA | location | yes |
+| NOTES | notes (textarea) | no |
+
+**Phone or Instagram, not both required.** A visitor gives one contact method, not
+necessarily two. Whichever is left empty submits as `null`; validate that at least one is
+filled. The Instagram field carries a subtitle: "Expect to receive messages for
+confirmation."
+
+**Shoot date** is the calendar widget from §9, plus a choice of two time slots —
+**Morning** or **Evening** — once a date is picked. Matt runs roughly one shoot a day, so
+this is which half of that day, not a precise time.
+
+**Needed by** asks when the visitor needs the finished photos, not when the shoot
+happens — worth asking because it is the thing that determines whether a rush fee comes
+up. Field copy: "When do you need the photos by?", subtitle "Editing usually takes me 2-3
+weeks after the day of the shoot, but I can get them to you faster for a rush fee."
+
+**Location / Area** is now required, not optional — Matt needs to know roughly where
+before he can confirm.
 
 Category-specific, into `categoryFields`:
 
@@ -340,7 +410,7 @@ Category-specific, into `categoryFields`:
   (number)
 
 Validate on blur. Errors under the field, in plain language saying how to fix it: "Add a
-phone number so Matt can text you." Errors do not apologise.
+phone number or Instagram handle so Matt can reach you." Errors do not apologise.
 
 **Testimonials beside the form.** One or two testimonials sit alongside the call sheet,
 filtered to the chosen shoot type and updating when it changes. Quiet: quote in Fraunces
@@ -362,6 +432,12 @@ confirms. He runs roughly one shoot a day and blocks out days he is busy, so ava
 is day-level, not time-slot-level. Pricing and duration vary enough across the four
 categories that he will want a conversation before anything is locked. Instant booking
 would also let someone hold a peak-season Saturday for free and then vanish.
+
+**Morning or evening is a preference, not a slot Cal.com books against.** Once a date is
+picked, the call sheet asks which half of the day works better — a plain either/or choice
+alongside the widget, submitted as `timeSlot`, not a second Cal.com availability axis.
+Availability stays day-level for the reasons above; the time-of-day choice just gives Matt
+something to work with when he confirms.
 
 **Implementation: embed Cal.com (free tier)**, configured for day-long request-mode
 bookings. Matt manages availability in Cal.com's own interface rather than one built
@@ -431,9 +507,11 @@ affects order, how long changes take to appear.
 - **Calendar heading:** `When works for you?`
 - **Submit control:** `Send to Matt`
 - **Pending:** `Sending`
-- **Confirmation:** `Got it. I'll text you to lock in the time.` (handwritten, on the print
-  itself), mono caption below the border `{{category of shoot}} - {{date of shoot}}` then
-  `{{location of shoot}}` on its own line (omitted if no location was given)
+- **Confirmation:** `Got it. I'll text you to lock in the time.` (handwritten, resolving
+  into the photograph's negative space), mono caption below the border
+  `{{category of shoot}} - {{date of shoot}}` then `{{location of shoot}}` on its own line
+  (location is required, always present), followed by the script sign-off
+  `Thank you for booking with me. Love, Matmat` (static, not per-booking)
 - **Failure:** `That didn't send. Check your connection and try again.`
 
 Sentence case throughout except call sheet labels and film markings. Active voice. Submit
@@ -491,8 +569,9 @@ own folder. Each builds against placeholder data and must be independently viewa
   bottom of the category view. Also owns routing for `/book` and `/book/:category`,
   in-place category switching via `history.replaceState`, and the category-filtered
   testimonial panel with its fallback.
-- **D — Polaroid.** Frame geometry, develop animation, Caveat handwriting line,
-  per-category image, reduced-motion variant.
+- **D — Polaroid.** Frame geometry, develop animation from flat grey to the per-category
+  hero photo, Caveat handwriting confirmation line resolving into the photo's negative
+  space, mono caption plus script sign-off in the bottom margin, reduced-motion variant.
 - **E — Supporting.** Testimonials, results, portfolio link, contact. Reads
   `content.json`. Renders nothing for empty sections.
 
@@ -536,8 +615,9 @@ Build Phase 1 in the listed order. Nothing depends on parallelism.
 - [ ] Testimonials beside the form filter by shoot type and fall back gracefully when a
       category has none.
 - [ ] Calendar renders and is usable at 375px.
-- [ ] Polaroid develops on `/success` from flat grey into the developed tint, with the
-      confirmation line resolving on the print and the category/date/location caption
+- [ ] Polaroid develops on `/success` from flat grey into the category's real hero
+      photograph, with the confirmation line resolving into the photo's negative space,
+      and the category/date/location caption plus the signature sign-off in the margin
       below the border.
 - [ ] New photos uploaded to Cloudinary appear without a redeploy.
 - [ ] Every photograph opens on the light table and is navigable and closable by keyboard
@@ -561,7 +641,8 @@ Build Phase 1 in the listed order. Nothing depends on parallelism.
 
 - 15–25 photographs per category, four categories, exported web-sized.
 - Four atmosphere frames for the background plates.
-- One hero frame per category for the Polaroid.
+- One hero frame per category for the Polaroid, shot with deliberate open space (sky,
+  wall, negative space) for the confirmation line to sit in without covering the subject.
 - Three or four testimonials with names and shoot types.
 - Conversion figures for the results section, or confirmation that there are none.
 - Logo or business card artwork.

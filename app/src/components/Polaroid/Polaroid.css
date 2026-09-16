@@ -19,9 +19,10 @@
      88.5mm-wide card = 5.75/88.5. Uniform on all four sides; the extra
      bottom-strip look comes from polaroid__margin's own aspect-ratio below,
      not from a lopsided frame padding. */
-  width: min(440px, 90vw);
+  width: min(378px, 90vw);
   background: var(--polaroid-paper);
-  padding: 6.4972%;
+  /*padding: 6.4972%;*/
+  padding: 2%;
   box-shadow:
     0 30px 60px -15px var(--polaroid-paper-shadow),
     0 4px 12px rgba(0, 0, 0, 0.3);
@@ -51,7 +52,7 @@
   position: relative;
   width: 100%;
   /* Real Polaroid 600 image window: 77 x 79mm. */
-  aspect-ratio: 77 / 79;
+  aspect-ratio: 77 / 78;
   overflow: hidden;
   background: #d8d4ca;
 }
@@ -81,12 +82,13 @@
   filter: none;
 }
 
-/* No hero photo yet for this category: develop to a warm, orangish tint
-   instead of faking a photograph (spec: PhotoAsset hero === null). Starts
-   as a flat, undeveloped grey — the color gradient and the confirmation
-   text both crossfade in on top of it together, as one resolving exposure.
-   grain-overlay and the image-area vignette (both painted after this in
-   the DOM/pseudo-element order) sit above both layers throughout. */
+/* No hero photo yet for this category: a generic placeholder image
+   (spec: PhotoAsset hero === null) develops the same way a real hero
+   photo would — grayscale/flat to full contrast — with a warm gradient
+   wash and the confirmation text crossfading in on top together, as one
+   resolving exposure. grain-overlay and the image-area vignette (both
+   painted after this in the DOM/pseudo-element order) sit above every
+   layer throughout. */
 .polaroid__develop {
   position: relative;
   width: 100%;
@@ -94,17 +96,31 @@
   background: #8a8a86;
 }
 
+/* Unlike a real hero photo (visible in grayscale from the start), this
+   placeholder stays fully hidden behind the flat grey background until
+   develop — it fades in at the same moment as the tint and text, so the
+   whole exposure resolves together rather than showing a photo early. */
+.polaroid__develop .polaroid__photo {
+  opacity: 0;
+  transition-property: opacity, filter;
+}
+
+.polaroid__develop .polaroid__photo--developed {
+  opacity: 1;
+}
+
 .polaroid__tint {
   position: absolute;
   inset: 0;
   background: linear-gradient(115deg, #8a8a86 0%, #8a8a86 24%, #b98f57 50%, var(--accent) 75%, #8a5b26 100%);
+  mix-blend-mode: color;
   opacity: 0;
   transition-property: opacity;
   transition-timing-function: ease-out;
 }
 
 .polaroid__tint--developed {
-  opacity: 1;
+  opacity: 0.6;
 }
 
 .polaroid__exposure {
@@ -149,7 +165,7 @@
      sizing purely aspect-ratio-driven. */
   margin: 0;
   box-sizing: border-box;
-  aspect-ratio: 77 / 17;
+  aspect-ratio: 77 / 18;
 }
 
 .polaroid__margin-inner {
@@ -163,13 +179,12 @@
   gap: var(--space-1);
 }
 
-.polaroid__mono {
-  margin: 0;
-  font-size: var(--text-xs);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: #55503f;
-  text-align: center;
+.polaroid__signature {
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: 60%;
+  max-height: 70%;
 }
 
 @media (max-width: 768px) {

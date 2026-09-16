@@ -88,7 +88,7 @@ export default function Landing({ onLightTableChange, variant = "vertical" }: La
   const openMeta = openCategory ? CATEGORIES.find((c) => c.key === openCategory) ?? null : null;
 
   const isHorizontal = variant === "horizontal";
-  const maxFramesPerStrip = isHorizontal ? 4 : 2;
+  const maxFramesPerStrip = isHorizontal ? 4 : 3;
   const strips = useMemo(
     () =>
       CATEGORIES.map((c) => ({
@@ -98,12 +98,13 @@ export default function Landing({ onLightTableChange, variant = "vertical" }: La
     [maxFramesPerStrip],
   );
 
-  // Downscaled from the base sizing per client feedback, applied twice now:
-  // the real site (vertical) 10% each time, the hidden /alt comparison
-  // (horizontal) 20% each time.
+  // Downscaled from the base sizing per client feedback, applied multiple
+  // times now: the real site (vertical) 10%, 10%, then 20% (to help the
+  // landing page fit one viewport with no scroll), the hidden /alt
+  // comparison (horizontal) 20% once.
   const stripVars: Record<string, string> = isHorizontal
     ? { "--frame-aspect": "3 / 2", "--frame-width": "clamp(102px, 12.2vw, 154px)" }
-    : { "--frame-width": "clamp(97px, 13vw, 146px)" };
+    : { "--frame-width": "clamp(62px, 7.8vw, 94px)" };
 
   if (openMeta && openCategory) {
     return (

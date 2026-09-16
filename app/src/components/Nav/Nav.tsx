@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { useLayoutEffect, useRef } from "react";
+import { useLocation, Link } from "react-router-dom";
 import content from "../../data/content.json";
 import "./Nav.css";
 
@@ -8,27 +8,35 @@ interface NavProps {
 }
 
 export default function Nav({ hidden }: NavProps) {
-  const [scrolled, setScrolled] = useState(false);
   const location = useLocation();
   // The success page is the end of the booking flow — there's nothing
-  // left to book from there, so Book drops out of the nav (Instagram
-  // stays, top left).
+  // left to book from there, so Book drops out (Instagram stays, top left).
   const hideBook = location.pathname.startsWith("/success");
-
-  useEffect(() => {
-    const handler = () => setScrolled(window.scrollY > 0);
-    handler();
-    window.addEventListener("scroll", handler, { passive: true });
-    return () => window.removeEventListener("scroll", handler);
-  }, []);
 
   const instagram = content.contact.instagram;
 
+  const navRef = useRef<HTMLElement | null>(null);
+
+  // Publishes this nav's rendered height as a CSS variable so pages that
+  // need to fit exactly one viewport (landing, success) can size
+  // themselves as calc(100dvh - var(--nav-height)) without guessing —
+  // measured rather than relying on a wrapping flex/scroll container,
+  // which would hijack window.scrollY away from the document (breaking
+  // the category rails' scroll-linked parallax and its scroll restore).
+  useLayoutEffect(() => {
+    const el = navRef.current;
+    if (!el) return;
+    const set = () => {
+      document.documentElement.style.setProperty("--nav-height", `${el.offsetHeight}px`);
+    };
+    set();
+    const observer = new ResizeObserver(set);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [hideBook]);
+
   return (
-    <header
-      className={`nav${scrolled ? " nav--scrolled" : ""}${hidden ? " nav--hidden" : ""}`}
-      aria-hidden={hidden}
-    >
+    <header ref={navRef} className={`nav${hidden ? " nav--hidden" : ""}`} aria-hidden={hidden}>
       {instagram ? (
         <a
           className="nav__instagram mono"

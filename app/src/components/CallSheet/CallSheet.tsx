@@ -201,7 +201,7 @@ export default function CallSheet({ presetCategory, onCategoryChange, onSuccess 
   if (success) {
     return (
       <section className="call-sheet call-sheet--success" aria-live="polite">
-        <p className="mono call-sheet__success-note">{content.copy["confirmation.message"]}</p>
+        <p className="mono call-sheet__success-note">{content.copy["callsheet.successNote"]}</p>
       </section>
     );
   }

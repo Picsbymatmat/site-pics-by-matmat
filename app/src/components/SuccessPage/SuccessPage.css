@@ -1,15 +1,22 @@
 .success-page {
-  min-height: 100vh;
+  /* Exactly the viewport minus Nav's real measured height (Nav.tsx sets
+     --nav-height), rather than a separate 100vh of its own — that's what
+     lets this page fit one screen with no scroll, without resorting to a
+     wrapping flex/scroll container that would hijack window.scrollY away
+     from the document (breaking the category rails' parallax). */
+  height: calc(100dvh - var(--nav-height, 55px));
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: var(--space-8);
-  padding: var(--space-8) var(--space-4);
+  gap: var(--space-12);
+  padding: 0 var(--space-4) var(--space-8);
 }
 
 .success-page__back {
-  color: var(--muted);
+  /* Deliberately dimmer than --muted (now near-white site-wide) — this
+     link stays a quiet, secondary presence. */
+  color: var(--muted-dim);
   font-size: var(--text-sm);
   text-decoration: none;
 }

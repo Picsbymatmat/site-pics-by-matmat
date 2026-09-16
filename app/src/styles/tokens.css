@@ -6,7 +6,11 @@
   --bg: #19191c;
   --surface: #242428;
   --ink: #f2f0ec;
-  --muted: #8c8981;
+  --muted: #e8e6e0;
+  /* Original grey --muted value, kept for the couple of links (Instagram,
+     "See more work") that should stay a quiet secondary color instead of
+     the near-white --muted used everywhere else. */
+  --muted-dim: #8c8981;
   --accent: #c08a4a;
   --rule: #38383f;
 

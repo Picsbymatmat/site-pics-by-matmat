@@ -1,24 +1,13 @@
-/* Nav — thin, text-only, present throughout. §3. */
+/* Nav — no bar, just Instagram and Book in the flow at the top of the
+   page; they scroll away with the rest of the content. §3. */
 
 .nav {
-  position: sticky;
-  top: 0;
-  /* Higher than any in-page back-link bar (z-index: 10) so this nav
-     visually obscures those as they scroll up underneath it, instead of
-     the two stacking side by side. */
-  z-index: 20;
+  position: relative;
+  z-index: 1;
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: var(--space-4) var(--space-6);
-  background: transparent;
-  border-bottom: 1px solid transparent;
-  transition: border-color var(--dur-label) ease;
-}
-
-.nav--scrolled {
-  border-bottom-color: var(--rule);
-  background: var(--bg);
 }
 
 .nav--hidden {
@@ -32,7 +21,9 @@
 }
 
 .nav__instagram {
-  color: var(--muted);
+  /* Deliberately dimmer than --muted (now near-white site-wide) — this
+     link stays a quiet, secondary presence. */
+  color: var(--muted-dim);
   font-size: var(--text-sm);
   text-decoration: none;
 }

@@ -137,9 +137,6 @@ export interface PolaroidProps {
   category: CategoryMeta;
   hero: PhotoAsset | null;
   reducedMotion: boolean;
-  /** Extra lines under the main handwritten message (e.g. category, date,
-   *  location) — the /success page's booking-details subtitle. */
-  subtitleLines?: string[];
 }
 
 export interface SupportingProps {

@@ -12,14 +12,22 @@
 
 .landing {
   position: relative;
-  min-height: 100vh;
+  /* Exactly the viewport minus Nav's real measured height (Nav.tsx sets
+     --nav-height), rather than a separate 100vh of its own — that's what
+     lets this page fit one screen with no scroll, without resorting to a
+     wrapping flex/scroll container that would hijack window.scrollY away
+     from the document (breaking the category rails' parallax). */
+  height: calc(100dvh - var(--nav-height, 55px));
   display: flex;
   align-items: center;
   overflow: hidden;
 }
 
 .landing-plate-layer {
-  position: absolute;
+  /* Fixed to the viewport, not the .landing container, so the plate
+     reaches the actual top of the page and sits behind the nav — an
+     experiment in letting Instagram/Book lay directly on the image. */
+  position: fixed;
   inset: 0;
   z-index: 0;
   background: var(--bg);
@@ -51,7 +59,7 @@
   position: relative;
   z-index: 1;
   width: 100%;
-  padding: var(--space-16) var(--space-6);
+  padding: 0 var(--space-6) var(--space-16);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -81,9 +89,11 @@
 }
 
 .landing-portfolio-link {
-  color: var(--muted);
+  /* Deliberately dimmer than --muted (now near-white site-wide) — this
+     link stays a quiet, secondary presence. */
+  color: var(--muted-dim);
   font-size: var(--text-sm);
-  text-decoration: none;
+  text-decoration: underline;
 }
 
 .landing-portfolio-link:hover {
@@ -103,7 +113,7 @@
   }
 
   .landing-content {
-    padding: var(--space-8) var(--space-4);
+    padding: 0 var(--space-4) var(--space-8);
     gap: var(--space-8);
   }
 

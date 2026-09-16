@@ -24,7 +24,7 @@ export default function SuccessPage() {
 
   const meta = CATEGORIES.find((c) => c.key === state.category);
   const formattedDate = formatDate(state.date);
-  const firstLine = [meta?.label, formattedDate].filter(Boolean).join("   ");
+  const firstLine = [meta?.label, formattedDate].filter(Boolean).join(" - ");
   const subtitleLines = [firstLine, state.location?.trim()].filter(
     (line): line is string => Boolean(line),
   );

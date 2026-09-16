@@ -13,7 +13,7 @@
     "calendar.heading": "When works for you?",
     "submit.default": "Send to Matt",
     "submit.pending": "Sending",
-    "confirmation.message": "I'll get back to you to confirm the time.",
+    "confirmation.message": "Got it. I'll text you to lock in the time.",
     "failure.message": "That didn't send. Check your connection and try again."
   },
   "portfolioLinks": [

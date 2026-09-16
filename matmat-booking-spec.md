@@ -137,17 +137,39 @@ sees when Matt is free, and requests a date in one motion.
 
 Submitting takes the visitor to a standalone confirmation page (`/success`, no category
 in the URL — there is nothing category-specific left to link to directly). A Polaroid
-rises into place, blank, then develops over roughly two and a half seconds from flat grey
-to a plain tint — no photograph, the card itself is the content. In the white margin,
-handwritten:
+rises into place, blank, then develops over roughly two and a half seconds from a flat
+undeveloped grey into a warm amber tint — no photograph, the card itself is the content.
+The confirmation line resolves directly on the tint as the exposure, handwritten, not in
+the margin:
 
-> I'll get back to you to confirm the time.
->
-> {{category of shoot}}   {{date of shoot}}
+> Got it. I'll text you to lock in the time.
+
+Below the print's border, a plain mono caption (not handwritten):
+
+> {{category of shoot}} - {{date of shoot}}
 > {{location of shoot}}
 
 The location line is omitted if none was given. Below the card, a quiet link back to the
 landing page.
+
+**Proportions match a real Polaroid 600 print, to the mm:**
+
+```
+card (border included):  88.5 x 107.5mm  → aspect-ratio 88.5 / 107.5
+image window:             77 x   79mm    → aspect-ratio 77 / 79
+border, all four sides:  5.75mm on an 88.5mm-wide card → 6.4972% padding
+caption strip:             77 x   17mm    → aspect-ratio 77 / 17
+```
+
+The border is a uniform matte on all sides — the caption strip is a distinct region
+below it, sized by its own aspect ratio, not by lopsided frame padding.
+
+The developed tint (no hero photograph exists yet for any category):
+
+```css
+background: linear-gradient(115deg, #8a8a86 0%, #8a8a86 24%, #b98f57 50%, var(--accent) 75%, #8a5b26 100%);
+/* opacity 0 -> 1 over the develop duration, revealing this gradient above the flat grey */
+```
 
 ### Below the fold
 
@@ -224,9 +246,12 @@ One moment gets real budget. Everything else is quiet or absent.
 
 ### The hero moment
 
-**The Polaroid developing.** The frame rises from below over 450ms, then the image
-develops over 2400ms from `grayscale(1) brightness(1.35) contrast(0.5)` to `none`, with
-a short delay first so the blank white reads. This is the only place motion is the
+**The Polaroid developing.** The frame rises from below over 450ms (settling at a slight
+-2° tilt, like a print set down by hand), then over 2400ms the image crossfades from flat
+grey to the developed tint and the handwritten confirmation line fades and sharpens in
+step with it — one resolving exposure, not two separate animations. A short delay first
+so the blank grey reads before developing starts. Film grain and the print's vignette are
+present throughout, undisturbed by the crossfade. This is the only place motion is the
 point.
 
 ### Everything else
@@ -273,7 +298,7 @@ Built first, not adapted. Most visitors arrive here from Instagram.
   zoom, 44px minimum tap targets.
 - **Calendar:** the embed must be usable at 375px. Test it early; this is the most likely
   thing to be broken on a phone.
-- **Polaroid:** same animation, sized to 82vw.
+- **Polaroid:** same animation, sized to 90vw (max 440px), same real-print proportions.
 
 Breakpoint at 768px.
 
@@ -406,7 +431,9 @@ affects order, how long changes take to appear.
 - **Calendar heading:** `When works for you?`
 - **Submit control:** `Send to Matt`
 - **Pending:** `Sending`
-- **Confirmation:** `I'll get back to you to confirm the time.`, subtitle `{{category of shoot}}   {{date of shoot}}` then `{{location of shoot}}` on its own line (omitted if no location was given)
+- **Confirmation:** `Got it. I'll text you to lock in the time.` (handwritten, on the print
+  itself), mono caption below the border `{{category of shoot}} - {{date of shoot}}` then
+  `{{location of shoot}}` on its own line (omitted if no location was given)
 - **Failure:** `That didn't send. Check your connection and try again.`
 
 Sentence case throughout except call sheet labels and film markings. Active voice. Submit
@@ -509,8 +536,9 @@ Build Phase 1 in the listed order. Nothing depends on parallelism.
 - [ ] Testimonials beside the form filter by shoot type and fall back gracefully when a
       category has none.
 - [ ] Calendar renders and is usable at 375px.
-- [ ] Polaroid develops on `/success` with the booking's category, date, and (if given)
-      location as the handwritten subtitle.
+- [ ] Polaroid develops on `/success` from flat grey into the developed tint, with the
+      confirmation line resolving on the print and the category/date/location caption
+      below the border.
 - [ ] New photos uploaded to Cloudinary appear without a redeploy.
 - [ ] Every photograph opens on the light table and is navigable and closable by keyboard
       alone, with focus returned to its originating frame.

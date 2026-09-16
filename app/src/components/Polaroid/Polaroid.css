@@ -15,14 +15,23 @@
   --polaroid-paper: #f4f1ea;
   --polaroid-paper-shadow: rgba(0, 0, 0, 0.45);
 
-  width: min(360px, 82vw);
+  /* Border thickness matches a real Polaroid 600 print: 5.75mm border on an
+     88.5mm-wide card = 5.75/88.5. Uniform on all four sides; the extra
+     bottom-strip look comes from polaroid__margin's own aspect-ratio below,
+     not from a lopsided frame padding. */
+  width: min(440px, 90vw);
   background: var(--polaroid-paper);
-  padding: 4.5% 4.5% 11%;
-  box-shadow: 0 18px 40px var(--polaroid-paper-shadow);
+  padding: 6.4972%;
+  box-shadow:
+    0 30px 60px -15px var(--polaroid-paper-shadow),
+    0 4px 12px rgba(0, 0, 0, 0.3);
   box-sizing: border-box;
 
+  /* A physical print set down slightly askew, not a UI card. */
+  --polaroid-tilt: -2deg;
+
   /* Rise: starts below and transparent, settles into place. */
-  transform: translateY(28%);
+  transform: translateY(28%) rotate(var(--polaroid-tilt));
   opacity: 0;
   transition:
     transform var(--dur-polaroid-rise) cubic-bezier(0.16, 1, 0.3, 1),
@@ -30,7 +39,7 @@
 }
 
 .polaroid--risen .polaroid__frame {
-  transform: translateY(0);
+  transform: translateY(0) rotate(var(--polaroid-tilt));
   opacity: 1;
 }
 
@@ -41,9 +50,20 @@
 .polaroid__image-area {
   position: relative;
   width: 100%;
-  aspect-ratio: 1 / 1;
+  /* Real Polaroid 600 image window: 77 x 79mm. */
+  aspect-ratio: 77 / 79;
   overflow: hidden;
   background: #d8d4ca;
+}
+
+/* Vignette, darkening the print's edges so the develop reads as an
+   exposure rather than a flat rectangle of color. */
+.polaroid__image-area::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  box-shadow: inset 0 0 3.5em 0.6em rgba(20, 15, 8, 0.3);
+  pointer-events: none;
 }
 
 .polaroid__photo {
@@ -61,53 +81,99 @@
   filter: none;
 }
 
-/* No hero photo yet for this category: develop to a flat tint instead of
-   faking a photograph (spec: PhotoAsset hero === null). */
-.polaroid__tint {
+/* No hero photo yet for this category: develop to a warm, orangish tint
+   instead of faking a photograph (spec: PhotoAsset hero === null). Starts
+   as a flat, undeveloped grey — the color gradient and the confirmation
+   text both crossfade in on top of it together, as one resolving exposure.
+   grain-overlay and the image-area vignette (both painted after this in
+   the DOM/pseudo-element order) sit above both layers throughout. */
+.polaroid__develop {
+  position: relative;
   width: 100%;
   height: 100%;
-  background: var(--surface);
-  filter: grayscale(1) brightness(1.35) contrast(0.5);
-  transition-property: filter;
+  background: #8a8a86;
+}
+
+.polaroid__tint {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(115deg, #8a8a86 0%, #8a8a86 24%, #b98f57 50%, var(--accent) 75%, #8a5b26 100%);
+  opacity: 0;
+  transition-property: opacity;
   transition-timing-function: ease-out;
 }
 
 .polaroid__tint--developed {
-  filter: none;
+  opacity: 1;
+}
+
+.polaroid__exposure {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12%;
+  font-family: var(--font-hand);
+  font-size: var(--text-xl);
+  line-height: 1.25;
+  text-align: center;
+  color: #241c1a;
+  mix-blend-mode: multiply;
+  opacity: 0;
+  filter: blur(2px);
+  transition-property: opacity, filter;
+  transition-timing-function: ease-out;
+}
+
+.polaroid__exposure--developed {
+  opacity: 1;
+  filter: blur(0);
 }
 
 .polaroid--no-motion .polaroid__photo,
-.polaroid--no-motion .polaroid__tint {
+.polaroid--no-motion .polaroid__tint,
+.polaroid--no-motion .polaroid__exposure {
   transition: none;
 }
 
 .polaroid__margin {
+  /* Caption strip below the uniform border: 77 x 17mm — the remainder of
+     the card's 107.5mm total height once the 79mm image window and the
+     5.75mm border (top and bottom) are accounted for. Deliberately not a
+     flex container itself: a flex box with aspect-ratio lets its own
+     content-based minimum height override the ratio, which threw the
+     strip's height off by several px. polaroid__margin-inner (a plain
+     100%-height child) does the centering instead, leaving this element's
+     sizing purely aspect-ratio-driven. */
   margin: 0;
-  padding: 6% var(--space-4) var(--space-4);
+  box-sizing: border-box;
+  aspect-ratio: 77 / 17;
+}
+
+.polaroid__margin-inner {
+  height: 100%;
+  padding: 0 var(--space-3);
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: var(--space-1);
-  min-height: 2.75em;
 }
 
-.polaroid__hand {
+.polaroid__mono {
   margin: 0;
-  font-family: var(--font-hand);
-  font-size: var(--text-2xl);
-  line-height: 1.2;
-  color: #2a2620;
-  text-align: center;
-}
-
-.polaroid__hand--subtitle {
-  font-size: var(--text-lg);
+  font-size: var(--text-xs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
   color: #55503f;
+  text-align: center;
 }
 
 @media (max-width: 768px) {
   .polaroid__frame {
-    width: 82vw;
+    width: 90vw;
   }
 }

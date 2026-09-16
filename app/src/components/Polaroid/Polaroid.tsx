@@ -87,24 +87,38 @@ export default function Polaroid({ category, hero, reducedMotion, subtitleLines 
               }
             />
           ) : (
-            <div
-              className={`polaroid__tint${developed ? " polaroid__tint--developed" : ""}`}
-              style={
-                reducedMotion
-                  ? undefined
-                  : { transitionDuration: `${developMsForStyle}ms` }
-              }
-              aria-hidden="true"
-            />
+            <div className="polaroid__develop">
+              <div
+                className={`polaroid__tint${developed ? " polaroid__tint--developed" : ""}`}
+                style={
+                  reducedMotion
+                    ? undefined
+                    : { transitionDuration: `${developMsForStyle}ms` }
+                }
+                aria-hidden="true"
+              />
+              <p
+                className={`polaroid__exposure${developed ? " polaroid__exposure--developed" : ""}`}
+                style={
+                  reducedMotion
+                    ? undefined
+                    : { transitionDuration: `${developMsForStyle}ms` }
+                }
+              >
+                {CONFIRMATION_LINE}
+              </p>
+            </div>
           )}
+          <div className="grain-overlay" />
         </div>
         <figcaption className="polaroid__margin">
-          <p className="polaroid__hand">{CONFIRMATION_LINE}</p>
-          {subtitleLines?.map((line, i) => (
-            <p className="polaroid__hand polaroid__hand--subtitle" key={i}>
-              {line}
-            </p>
-          ))}
+          <div className="polaroid__margin-inner">
+            {subtitleLines?.map((line, i) => (
+              <p className="polaroid__mono mono" key={i}>
+                {line}
+              </p>
+            ))}
+          </div>
         </figcaption>
       </div>
     </figure>

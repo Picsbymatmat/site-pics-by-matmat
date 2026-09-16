@@ -11,29 +11,45 @@ import type {
   EventFields,
   PortraitFields,
   ProductFields,
+  TimeSlot,
+  Turnaround,
 } from "../../types";
 import "./CallSheet.css";
 
 // ---- Shared field state ----
+//
+// Shoot type is one question among the rest (§ conversation: "the shoot
+// type only determines the questions on the rest of the form, not any
+// header labeling text") — it never hides itself, and picking it never
+// rewrites the heading copy above the form. It only changes which
+// category-specific fields render below it.
+
+type ContactMethod = "phone" | "instagram";
 
 interface SharedFieldValues {
   name: string;
+  contactMethod: ContactMethod;
+  contactValue: string;
   email: string;
-  phone: string;
-  preferredDate: string;
-  altDate: string;
+  subject: string;
   location: string;
-  details: string;
+  shootDate: string;
+  timeSlot: TimeSlot | "";
+  turnaround: Turnaround;
+  notes: string;
 }
 
 const EMPTY_SHARED: SharedFieldValues = {
   name: "",
+  contactMethod: "phone",
+  contactValue: "",
   email: "",
-  phone: "",
-  preferredDate: "",
-  altDate: "",
+  subject: "",
   location: "",
-  details: "",
+  shootDate: "",
+  timeSlot: "",
+  turnaround: "standard",
+  notes: "",
 };
 
 // ---- Category field state, one bucket per category so switching never
@@ -49,13 +65,20 @@ interface CategoryFieldState {
 const EMPTY_CATEGORY_FIELDS: CategoryFieldState = {
   product: { business: "", productCount: "", usage: "ecommerce listings" },
   brand: { business: "", deliverables: "social content", shootLength: "1 hour" },
-  event: { eventType: "", eventDate: "", duration: "", guestCount: "" },
+  event: { eventType: "", duration: "", guestCount: "" },
   portrait: { occasion: "", people: "" },
 };
 
 type SharedFieldName = keyof SharedFieldValues;
 
-const SHARED_REQUIRED: SharedFieldName[] = ["name", "email", "phone", "preferredDate"];
+const SHARED_REQUIRED: SharedFieldName[] = [
+  "name",
+  "contactValue",
+  "email",
+  "subject",
+  "location",
+  "shootDate",
+];
 
 type SubmitStatus = "idle" | "pending" | "failure";
 
@@ -67,19 +90,28 @@ const BLOCK_SUBMIT_ON_VALIDATION_ERRORS = false;
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-function sharedFieldError(field: SharedFieldName, value: string): string | null {
-  const trimmed = value.trim();
+function sharedFieldError(field: SharedFieldName, values: SharedFieldValues): string | null {
+  const value = values[field];
+  const trimmed = typeof value === "string" ? value.trim() : "";
   switch (field) {
     case "name":
       return trimmed ? null : "Add your name so Matt knows who's booking.";
+    case "contactValue":
+      return trimmed
+        ? null
+        : values.contactMethod === "phone"
+          ? "Add a phone number so Matt can text you."
+          : "Add your Instagram handle so Matt can reach you.";
     case "email":
-      if (!trimmed) return "Add an email so Matt can reach you.";
+      if (!trimmed) return "Add an email so Matt can send the photos to you.";
       if (!EMAIL_RE.test(trimmed)) return "That email doesn't look right — check it and try again.";
       return null;
-    case "phone":
-      return trimmed ? null : "Add a phone number so Matt can text you.";
-    case "preferredDate":
-      return trimmed ? null : "Pick a preferred date so Matt knows when you're hoping to shoot.";
+    case "subject":
+      return trimmed ? null : "Say who or what this shoot is for.";
+    case "location":
+      return trimmed ? null : "Say where the shoot will be held.";
+    case "shootDate":
+      return trimmed ? null : "Pick a date so Matt knows when you're hoping to shoot.";
     default:
       return null;
   }
@@ -103,8 +135,6 @@ export default function CallSheet({ presetCategory, onCategoryChange, onSuccess 
   const [status, setStatus] = useState<SubmitStatus>("idle");
   const [success, setSuccess] = useState(false);
 
-  const categoryMeta = category ? CATEGORY_BY_SLUG[CATEGORIES.find((c) => c.key === category)!.slug] : null;
-
   // ---- Category switching: updates fields + URL in place, never a real nav ----
   const handleCategorySelect = useCallback(
     (key: CategoryKey) => {
@@ -118,7 +148,7 @@ export default function CallSheet({ presetCategory, onCategoryChange, onSuccess 
     [navigate, onCategoryChange],
   );
 
-  const setSharedField = useCallback((field: SharedFieldName, value: string) => {
+  const setSharedField = useCallback(<K extends SharedFieldName>(field: K, value: SharedFieldValues[K]) => {
     setShared((prev) => ({ ...prev, [field]: value }));
   }, []);
 
@@ -133,7 +163,7 @@ export default function CallSheet({ presetCategory, onCategoryChange, onSuccess 
   const sharedErrors = useMemo(() => {
     const errors: Partial<Record<SharedFieldName, string>> = {};
     for (const field of SHARED_REQUIRED) {
-      const err = sharedFieldError(field, shared[field]);
+      const err = sharedFieldError(field, shared);
       if (err) errors[field] = err;
     }
     return errors;
@@ -143,7 +173,7 @@ export default function CallSheet({ presetCategory, onCategoryChange, onSuccess 
 
   const isValid = useMemo(() => {
     if (categoryError) return false;
-    return SHARED_REQUIRED.every((field) => !sharedFieldError(field, shared[field]));
+    return SHARED_REQUIRED.every((field) => !sharedFieldError(field, shared));
   }, [categoryError, shared]);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -154,24 +184,30 @@ export default function CallSheet({ presetCategory, onCategoryChange, onSuccess 
       ...prev,
       category: true,
       name: true,
+      contactValue: true,
       email: true,
-      phone: true,
-      preferredDate: true,
+      subject: true,
+      location: true,
+      shootDate: true,
     }));
 
     if (!category || (BLOCK_SUBMIT_ON_VALIDATION_ERRORS && !isValid)) return;
 
     const webhookUrl = import.meta.env.VITE_BOOKING_WEBHOOK_URL as string | undefined;
 
+    const contactValue = shared.contactValue.trim() || null;
     const payload: BookingPayload = {
       category,
       name: shared.name.trim(),
+      subject: shared.subject.trim(),
       email: shared.email.trim(),
-      phone: shared.phone.trim(),
-      preferredDate: shared.preferredDate,
-      altDate: shared.altDate ? shared.altDate : null,
-      location: shared.location.trim() ? shared.location.trim() : null,
-      details: shared.details.trim() ? shared.details.trim() : null,
+      phone: shared.contactMethod === "phone" ? contactValue : null,
+      instagram: shared.contactMethod === "instagram" ? contactValue : null,
+      shootDate: shared.shootDate,
+      timeSlot: shared.timeSlot ? shared.timeSlot : null,
+      turnaround: shared.turnaround,
+      location: shared.location.trim(),
+      notes: shared.notes.trim() ? shared.notes.trim() : null,
       categoryFields: { ...categoryFields[category] },
       submittedAt: new Date().toISOString(),
       source: "picsbymatmat-booking",
@@ -194,10 +230,6 @@ export default function CallSheet({ presetCategory, onCategoryChange, onSuccess 
     }
   }
 
-  const presetHeading = categoryMeta
-    ? content.copy["callsheet.presetHeading"].replace("{category}", categoryMeta.label)
-    : null;
-
   if (success) {
     return (
       <section className="call-sheet call-sheet--success" aria-live="polite">
@@ -210,50 +242,10 @@ export default function CallSheet({ presetCategory, onCategoryChange, onSuccess 
     <section className="call-sheet">
       <p className="call-sheet__above">{content.copy["callsheet.aboveForm"]}</p>
 
-      {presetHeading ? (
-        <h2 className="call-sheet__preset-heading">{presetHeading}</h2>
-      ) : null}
-
       <form className="call-sheet__form" onSubmit={handleSubmit} noValidate>
-        {!presetCategory ? (
-          <div className="call-sheet__row">
-            <label className="call-sheet__label mono" htmlFor="cs-shoot-type">
-              {content.copy["callsheet.firstFieldLabel"]}
-            </label>
-            <div className="call-sheet__control">
-              <select
-                id="cs-shoot-type"
-                required
-                value={category ?? ""}
-                aria-describedby={touched.category && categoryError ? "cs-shoot-type-error" : undefined}
-                aria-invalid={Boolean(touched.category && categoryError)}
-                onChange={(e) => {
-                  const value = e.target.value as CategoryKey | "";
-                  if (value) handleCategorySelect(value);
-                }}
-                onBlur={() => setTouched((prev) => ({ ...prev, category: true }))}
-              >
-                <option value="" disabled>
-                  Choose one
-                </option>
-                {CATEGORIES.map((c) => (
-                  <option key={c.key} value={c.key}>
-                    {c.label}
-                  </option>
-                ))}
-              </select>
-              {touched.category && categoryError ? (
-                <p className="call-sheet__error" id="cs-shoot-type-error" role="alert">
-                  {categoryError}
-                </p>
-              ) : null}
-            </div>
-          </div>
-        ) : null}
-
         <SharedRow
           field="name"
-          label="SUBJECT"
+          label="YOUR NAME"
           type="text"
           value={shared.name}
           error={touched.name ? sharedErrors.name : undefined}
@@ -261,56 +253,109 @@ export default function CallSheet({ presetCategory, onCategoryChange, onSuccess 
           onBlur={blurShared}
           autoComplete="name"
         />
-        <SharedRow
-          field="email"
-          label="EMAIL"
-          type="email"
-          value={shared.email}
-          error={touched.email ? sharedErrors.email : undefined}
-          onChange={setSharedField}
-          onBlur={blurShared}
-          autoComplete="email"
-        />
-        <SharedRow
-          field="phone"
-          label="PHONE"
-          type="tel"
-          value={shared.phone}
-          error={touched.phone ? sharedErrors.phone : undefined}
-          onChange={setSharedField}
-          onBlur={blurShared}
-          autoComplete="tel"
-        />
-        <SharedRow
-          field="preferredDate"
-          label="PREFERRED DATE"
-          type="date"
-          value={shared.preferredDate}
-          error={touched.preferredDate ? sharedErrors.preferredDate : undefined}
-          onChange={setSharedField}
-          onBlur={blurShared}
-        />
-        <SharedRow
-          field="altDate"
-          label="ALTERNATE DATE"
-          type="date"
-          value={shared.altDate}
-          onChange={setSharedField}
-          onBlur={blurShared}
-        />
-        <div className="call-sheet__calendar">
-          <h3 className="call-sheet__calendar-heading">{content.copy["calendar.heading"]}</h3>
-          <CalendarEmbed />
+
+        <div className="call-sheet__row">
+          <label className="call-sheet__label mono" htmlFor="cs-contact">
+            PHONE OR INSTAGRAM
+          </label>
+          <div className="call-sheet__control">
+            <p className="call-sheet__subtitle">How I'll reach out.</p>
+            <div className="call-sheet__method-toggle" role="radiogroup" aria-label="Contact method">
+              <button
+                type="button"
+                role="radio"
+                aria-checked={shared.contactMethod === "phone"}
+                className={`call-sheet__method-btn${shared.contactMethod === "phone" ? " call-sheet__method-btn--active" : ""}`}
+                onClick={() => setSharedField("contactMethod", "phone")}
+              >
+                Phone
+              </button>
+              <button
+                type="button"
+                role="radio"
+                aria-checked={shared.contactMethod === "instagram"}
+                className={`call-sheet__method-btn${shared.contactMethod === "instagram" ? " call-sheet__method-btn--active" : ""}`}
+                onClick={() => setSharedField("contactMethod", "instagram")}
+              >
+                Instagram
+              </button>
+            </div>
+            <input
+              id="cs-contact"
+              type={shared.contactMethod === "phone" ? "tel" : "text"}
+              placeholder={shared.contactMethod === "phone" ? "(555) 555-5555" : "@handle"}
+              value={shared.contactValue}
+              autoComplete={shared.contactMethod === "phone" ? "tel" : undefined}
+              aria-describedby={touched.contactValue && sharedErrors.contactValue ? "cs-contact-error" : undefined}
+              aria-invalid={Boolean(touched.contactValue && sharedErrors.contactValue)}
+              onChange={(e) => setSharedField("contactValue", e.target.value)}
+              onBlur={() => blurShared("contactValue")}
+            />
+            {touched.contactValue && sharedErrors.contactValue ? (
+              <p className="call-sheet__error" id="cs-contact-error" role="alert">
+                {sharedErrors.contactValue}
+              </p>
+            ) : null}
+          </div>
         </div>
 
-        <SharedRow
-          field="location"
-          label="LOCATION"
-          type="text"
-          value={shared.location}
-          onChange={setSharedField}
-          onBlur={blurShared}
-        />
+        <div className="call-sheet__row">
+          <label className="call-sheet__label mono" htmlFor="cs-email">
+            EMAIL
+          </label>
+          <div className="call-sheet__control">
+            <p className="call-sheet__subtitle">How I'll deliver the photos.</p>
+            <input
+              id="cs-email"
+              type="email"
+              value={shared.email}
+              autoComplete="email"
+              aria-describedby={touched.email && sharedErrors.email ? "cs-email-error" : undefined}
+              aria-invalid={Boolean(touched.email && sharedErrors.email)}
+              onChange={(e) => setSharedField("email", e.target.value)}
+              onBlur={() => blurShared("email")}
+            />
+            {touched.email && sharedErrors.email ? (
+              <p className="call-sheet__error" id="cs-email-error" role="alert">
+                {sharedErrors.email}
+              </p>
+            ) : null}
+          </div>
+        </div>
+
+        <div className="call-sheet__row">
+          <label className="call-sheet__label mono" htmlFor="cs-shoot-type">
+            {content.copy["callsheet.firstFieldLabel"]}
+          </label>
+          <div className="call-sheet__control">
+            <select
+              id="cs-shoot-type"
+              required
+              value={category ?? ""}
+              aria-describedby={touched.category && categoryError ? "cs-shoot-type-error" : undefined}
+              aria-invalid={Boolean(touched.category && categoryError)}
+              onChange={(e) => {
+                const value = e.target.value as CategoryKey | "";
+                if (value) handleCategorySelect(value);
+              }}
+              onBlur={() => setTouched((prev) => ({ ...prev, category: true }))}
+            >
+              <option value="" disabled>
+                Choose one
+              </option>
+              {CATEGORIES.map((c) => (
+                <option key={c.key} value={c.key}>
+                  {c.label}
+                </option>
+              ))}
+            </select>
+            {touched.category && categoryError ? (
+              <p className="call-sheet__error" id="cs-shoot-type-error" role="alert">
+                {categoryError}
+              </p>
+            ) : null}
+          </div>
+        </div>
 
         {category ? (
           <CategoryFieldsSection
@@ -322,6 +367,91 @@ export default function CallSheet({ presetCategory, onCategoryChange, onSuccess 
           />
         ) : null}
 
+        <SharedRow
+          field="subject"
+          label="SUBJECT"
+          type="text"
+          value={shared.subject}
+          error={touched.subject ? sharedErrors.subject : undefined}
+          onChange={setSharedField}
+          onBlur={blurShared}
+          placeholder="who or what this shoot is for"
+        />
+
+        <SharedRow
+          field="location"
+          label="LOCATION"
+          type="text"
+          value={shared.location}
+          error={touched.location ? sharedErrors.location : undefined}
+          onChange={setSharedField}
+          onBlur={blurShared}
+          placeholder="where should I meet you"
+        />
+
+        <div className="call-sheet__row">
+          <label className="call-sheet__label mono" htmlFor="cs-shoot-date">
+            SHOOT DATE
+          </label>
+          <div className="call-sheet__control">
+            <input
+              id="cs-shoot-date"
+              type="date"
+              value={shared.shootDate}
+              aria-describedby={touched.shootDate && sharedErrors.shootDate ? "cs-shoot-date-error" : undefined}
+              aria-invalid={Boolean(touched.shootDate && sharedErrors.shootDate)}
+              onChange={(e) => setSharedField("shootDate", e.target.value)}
+              onBlur={() => blurShared("shootDate")}
+            />
+            {touched.shootDate && sharedErrors.shootDate ? (
+              <p className="call-sheet__error" id="cs-shoot-date-error" role="alert">
+                {sharedErrors.shootDate}
+              </p>
+            ) : null}
+            {shared.shootDate ? (
+              <div className="call-sheet__method-toggle" role="radiogroup" aria-label="Time of day">
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={shared.timeSlot === "morning"}
+                  className={`call-sheet__method-btn${shared.timeSlot === "morning" ? " call-sheet__method-btn--active" : ""}`}
+                  onClick={() => setSharedField("timeSlot", "morning")}
+                >
+                  Morning
+                </button>
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={shared.timeSlot === "evening"}
+                  className={`call-sheet__method-btn${shared.timeSlot === "evening" ? " call-sheet__method-btn--active" : ""}`}
+                  onClick={() => setSharedField("timeSlot", "evening")}
+                >
+                  Evening
+                </button>
+              </div>
+            ) : null}
+            <div className="call-sheet__calendar">
+              <CalendarEmbed />
+            </div>
+          </div>
+        </div>
+
+        <div className="call-sheet__row">
+          <label className="call-sheet__label mono" htmlFor="cs-turnaround">
+            DELIVERY DATE
+          </label>
+          <div className="call-sheet__control">
+            <select
+              id="cs-turnaround"
+              value={shared.turnaround}
+              onChange={(e) => setSharedField("turnaround", e.target.value as Turnaround)}
+            >
+              <option value="standard">2-3 weeks from shoot date - Typical turnaround</option>
+              <option value="rush">Sooner - Comes with a rush fee</option>
+            </select>
+          </div>
+        </div>
+
         <div className="call-sheet__row">
           <label className="call-sheet__label mono" htmlFor="cs-notes">
             NOTES
@@ -330,9 +460,9 @@ export default function CallSheet({ presetCategory, onCategoryChange, onSuccess 
             <textarea
               id="cs-notes"
               rows={4}
-              value={shared.details}
-              onChange={(e) => setSharedField("details", e.target.value)}
-              onBlur={() => blurShared("details")}
+              value={shared.notes}
+              onChange={(e) => setSharedField("notes", e.target.value)}
+              onBlur={() => blurShared("notes")}
             />
           </div>
         </div>
@@ -361,12 +491,13 @@ interface SharedRowProps {
   type: "text" | "email" | "tel" | "date";
   value: string;
   error?: string;
-  onChange: (field: SharedFieldName, value: string) => void;
+  placeholder?: string;
+  onChange: <K extends SharedFieldName>(field: K, value: SharedFieldValues[K]) => void;
   onBlur: (field: SharedFieldName) => void;
   autoComplete?: string;
 }
 
-function SharedRow({ field, label, type, value, error, onChange, onBlur, autoComplete }: SharedRowProps) {
+function SharedRow({ field, label, type, value, error, placeholder, onChange, onBlur, autoComplete }: SharedRowProps) {
   const id = `cs-${field}`;
   const errorId = `${id}-error`;
   return (
@@ -379,6 +510,7 @@ function SharedRow({ field, label, type, value, error, onChange, onBlur, autoCom
           id={id}
           type={type}
           value={value}
+          placeholder={placeholder}
           autoComplete={autoComplete}
           aria-describedby={error ? errorId : undefined}
           aria-invalid={Boolean(error)}
@@ -460,7 +592,6 @@ function CategoryFieldsSection({ category, values, setValues, onBlur }: Category
     return (
       <>
         <TextRow id="cs-eventType" label="EVENT TYPE" value={v.eventType} onChange={(val) => set({ eventType: val })} onBlur={() => onBlur("eventType")} />
-        <TextRow id="cs-eventDate" label="EVENT DATE" type="date" value={v.eventDate} onChange={(val) => set({ eventDate: val })} onBlur={() => onBlur("eventDate")} />
         <TextRow id="cs-duration" label="DURATION" value={v.duration} onChange={(val) => set({ duration: val })} onBlur={() => onBlur("duration")} />
         <TextRow id="cs-guestCount" label="GUEST COUNT" value={v.guestCount} onChange={(val) => set({ guestCount: val })} onBlur={() => onBlur("guestCount")} />
       </>

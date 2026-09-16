@@ -13,13 +13,6 @@ export default function App() {
       <Nav hidden={lightTableOpen} />
       <Routes>
         <Route path="/" element={<Landing onLightTableChange={setLightTableOpen} />} />
-        {/* Hidden comparison layout, not linked from anywhere in the UI —
-            landscape-aspect frames, 4 per strip, vs. the real site's
-            portrait/2-per-strip fan. */}
-        <Route
-          path="/alt"
-          element={<Landing onLightTableChange={setLightTableOpen} variant="horizontal" />}
-        />
         <Route path="/book" element={<BookingRoute />} />
         <Route path="/book/:category" element={<BookingRoute />} />
         <Route path="/success" element={<SuccessPage />} />

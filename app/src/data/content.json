@@ -7,18 +7,15 @@
     "landing.heading": "Pick a shot.",
     "landing.portfolioLink": "See more work",
     "landing.backLink": "Pick a shot",
-    "callsheet.presetHeading": "Shoot type — {category}",
     "callsheet.firstFieldLabel": "SHOOT TYPE",
     "callsheet.aboveForm": "Tell me what you have in mind",
     "callsheet.successNote": "Got it — redirecting...",
-    "calendar.heading": "When works for you?",
     "submit.default": "Send",
     "submit.pending": "Sending",
     "failure.message": "That didn't send. Check your connection and try again."
   },
   "portfolioLinks": [
-    { "label": "Portfolio", "url": "https://picsbymatmat0fb5.myportfolio.com/work" },
-    { "label": "Portfolio (alt)", "url": "https://picsbymatmat.com/work" }
+    { "label": "Portfolio", "url": "https://picsbymatmat0fb5.myportfolio.com/work" }
   ],
   "contact": {
     "instagram": "",

@@ -31,7 +31,7 @@ export default function BookingFlow({ presetCategory }: BookingFlowProps) {
     (payload: BookingPayload) => {
       const state: SuccessState = {
         category: payload.category,
-        date: payload.preferredDate,
+        date: payload.shootDate,
         location: payload.location,
       };
       navigate("/success", { state });

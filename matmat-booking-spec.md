@@ -61,13 +61,14 @@ lead.
 ```json
 {
   "category": "product" | "brand" | "event" | "portrait",
+  "name": "string",
   "subject": "string",
   "email": "string",
   "phone": "string | null",
   "instagram": "string | null",
   "shootDate": "YYYY-MM-DD | null",
   "timeSlot": "morning" | "evening" | null,
-  "neededBy": "YYYY-MM-DD | null",
+  "turnaround": "standard" | "rush",
   "location": "string",
   "notes": "string | null",
   "categoryFields": { },
@@ -76,10 +77,13 @@ lead.
 }
 ```
 
-Exactly one of `phone` or `instagram` is required; the other is `null`. `location` is
-required (see §8 — it changed from optional). `preferredDate`/`altDate` from the earlier
-draft are gone, replaced by `shootDate` (from the calendar widget) plus `timeSlot` and the
-separate `neededBy` delivery-target date.
+`name` is the person booking; `subject` is who or what the shoot is actually of (the
+earlier draft conflated these into one field labelled SUBJECT — they are now separate
+questions). Exactly one of `phone` or `instagram` is required; the other is `null`.
+`location` is required (see §8 — it changed from optional). `preferredDate`/`altDate` from
+the earlier draft are gone, replaced by `shootDate` (from the calendar widget) plus
+`timeSlot`. The delivery-target date became a two-option choice, `turnaround`, rather than
+a literal date — see §8.
 
 Non-2xx or network error is a failure. Do not clear the form on failure.
 
@@ -359,9 +363,12 @@ Breakpoint at 768px.
 ## 8. The call sheet
 
 **Category and URL.** Each category has its own booking URL, so Matt can link straight to
-one from an Instagram story. Arriving at `/book/portrait` presets the shoot type and
-shows it as fixed text at the top of the sheet. Arriving at `/book` makes `SHOOT TYPE`
-the first field, required. Choosing a strip on the landing routes to that category's URL.
+one from an Instagram story. Arriving at `/book/portrait` presets the shoot type. Arriving
+at `/book` leaves it unset. Either way, `SHOOT TYPE` is always rendered as a normal
+question in the form — it is never hidden or swapped for fixed text, and picking or
+presetting it never changes any surrounding header or label copy. It only changes which
+category-specific questions render beneath it. Choosing a strip on the landing routes to
+that category's URL.
 
 Changing the shoot type from the dropdown updates the category-specific fields and
 rewrites the URL with `history.replaceState`. It does not navigate, does not reload, and
@@ -369,48 +376,59 @@ does not clear anything already typed. **Never trigger navigation from a select 
 — it breaks keyboard and screen reader use, where users move through options one at a
 time.
 
-Shared fields, all categories:
+Shared fields, all categories, in order:
 
 | Label | Field | Required |
 | --- | --- | --- |
-| SUBJECT | name | yes |
+| YOUR NAME | name | yes |
+| PHONE OR INSTAGRAM | phone (tel) or instagram, one toggle | one of phone/Instagram |
 | EMAIL | email | yes |
-| PHONE | phone (tel) | one of phone/Instagram |
-| INSTAGRAM | instagram | one of phone/Instagram |
+| SHOOT TYPE | category | yes |
+| *(category-specific fields, see below)* | categoryFields | varies |
+| SUBJECT | subject | yes |
+| LOCATION | location | yes |
 | SHOOT DATE | shootDate + timeSlot (calendar widget, §9) | yes |
-| NEEDED BY | neededBy | yes |
-| LOCATION / AREA | location | yes |
+| DELIVERY DATE | turnaround (two-option select) | yes |
 | NOTES | notes (textarea) | no |
 
-**Phone or Instagram, not both required.** A visitor gives one contact method, not
-necessarily two. Whichever is left empty submits as `null`; validate that at least one is
-filled. The Instagram field carries a subtitle: "Expect to receive messages for
-confirmation."
+**Name vs. subject.** `name` is the person booking; `subject` is who or what the shoot is
+actually of (e.g. a business name, a couple, an event). These are two separate questions,
+not one field doing double duty.
+
+**Phone or Instagram, not both required.** A single question with a method toggle
+(Phone / Instagram) and one text input, subtitled "How I'll reach out." Whichever method
+isn't chosen submits as `null`; validate that the chosen method's value is filled.
+
+**Email** is subtitled "How I'll deliver the photos."
 
 **Shoot date** is the calendar widget from §9, plus a choice of two time slots —
 **Morning** or **Evening** — once a date is picked. Matt runs roughly one shoot a day, so
 this is which half of that day, not a precise time.
 
-**Needed by** asks when the visitor needs the finished photos, not when the shoot
-happens — worth asking because it is the thing that determines whether a rush fee comes
-up. Field copy: "When do you need the photos by?", subtitle "Editing usually takes me 2-3
-weeks after the day of the shoot, but I can get them to you faster for a rush fee."
+**Delivery date** is not a literal date — it is a two-option select asking how soon the
+visitor needs the photos, since that is what actually determines whether a rush fee comes
+up:
 
-**Location / Area** is now required, not optional — Matt needs to know roughly where
-before he can confirm.
+- "2-3 weeks from shoot date - typical turnaround" (default)
+- "Sooner - Comes with a rush fee"
 
-Category-specific, into `categoryFields`:
+**Location** is required, not optional — Matt needs to know roughly where before he can
+confirm. Placeholder text: "A general area is plenty, just so I can plan my commute." —
+visitors are not asked for a street address, just an area. Error: "Say where the shoot
+will be held."
+
+Category-specific, into `categoryFields`, rendered directly beneath the shoot type field:
 
 - **Professional & Product** — `business`, `productCount`, `usage` (select: ecommerce
   listings, social, website, advertising, other)
 - **Brand & Lifestyle** — `business`, `deliverables` (select: social content, campaign,
   headshots, other), `shootLength` (select: 1 hour, 2 hours, half day)
-- **Events** — `eventType`, `eventDate`, `duration`, `guestCount`
+- **Events** — `eventType`, `duration`, `guestCount`
 - **Portraits** — `occasion` (text, e.g. graduation, headshots, couples), `people`
   (number)
 
 Validate on blur. Errors under the field, in plain language saying how to fix it: "Add a
-phone number or Instagram handle so Matt can reach you." Errors do not apologise.
+phone number so Matt can text you." Errors do not apologise.
 
 **Testimonials beside the form.** One or two testimonials sit alongside the call sheet,
 filtered to the chosen shoot type and updating when it changes. Quiet: quote in Fraunces
@@ -448,7 +466,9 @@ rest of the site. A custom month grid reading his Google Calendar would look bet
 cost a meaningful share of the budget. If he chooses that later it slots in behind the
 same interface.
 
-The calendar sits inside the call sheet step. A visitor should not have to hunt for it.
+The calendar sits inside the call sheet step, directly under the shoot date field, with no
+separate heading above it — cut per client feedback. A visitor should not have to hunt for
+it.
 
 ---
 
@@ -499,13 +519,12 @@ affects order, how long changes take to appear.
 
 - **Nav:** `Book`, `Instagram`
 - **Landing heading:** `Pick a shot.`
-- **Call sheet, category preset:** `Shoot type — {category}`
-- **Call sheet, first field when arriving direct:** `SHOOT TYPE`
+- **Call sheet, shoot type field label (always shown, never swapped for a heading):**
+  `SHOOT TYPE`
 - **Strip labels:** `Product`, `Event`, `Brand`, `Portrait`
 - **Landing portfolio link:** `See more work`
-- **Above the call sheet:** `Tell Matt what you're planning.`
-- **Calendar heading:** `When works for you?`
-- **Submit control:** `Send to Matt`
+- **Above the call sheet:** `Tell me what you have in mind`
+- **Submit control:** `Send`
 - **Pending:** `Sending`
 - **Confirmation:** `Got it. I'll text you to lock in the time.` (handwritten, resolving
   into the photograph's negative space), mono caption below the border

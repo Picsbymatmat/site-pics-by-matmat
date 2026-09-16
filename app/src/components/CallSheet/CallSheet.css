@@ -75,6 +75,33 @@
   border-color: var(--accent);
 }
 
+.call-sheet__subtitle {
+  color: var(--muted-dim);
+  font-size: var(--text-sm);
+  margin: 0;
+}
+
+.call-sheet__method-toggle {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.call-sheet__method-btn {
+  background: var(--bg);
+  border: 1px solid var(--rule);
+  color: var(--muted);
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--text-sm);
+  font-family: var(--font-display);
+  cursor: pointer;
+  min-height: 44px;
+}
+
+.call-sheet__method-btn--active {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
 .call-sheet__error {
   color: var(--accent);
   font-size: var(--text-sm);
@@ -112,8 +139,7 @@
 }
 
 .call-sheet__calendar {
-  padding: var(--space-4) 0;
-  border-top: 1px solid var(--rule);
+  margin-top: var(--space-4);
 }
 
 .call-sheet__calendar-heading {

@@ -49,7 +49,6 @@ export interface BrandFields {
 
 export interface EventFields {
   eventType: string;
-  eventDate: string;
   duration: string;
   guestCount: string;
 }
@@ -66,15 +65,21 @@ export type CategoryFieldsByKey = {
   portrait: PortraitFields;
 };
 
+export type TimeSlot = "morning" | "evening";
+export type Turnaround = "standard" | "rush";
+
 export interface BookingPayload {
   category: CategoryKey;
   name: string;
+  subject: string;
   email: string;
-  phone: string;
-  preferredDate: string;
-  altDate: string | null;
-  location: string | null;
-  details: string | null;
+  phone: string | null;
+  instagram: string | null;
+  shootDate: string;
+  timeSlot: TimeSlot | null;
+  turnaround: Turnaround;
+  location: string;
+  notes: string | null;
   categoryFields: Record<string, unknown>;
   submittedAt: string;
   source: "picsbymatmat-booking";

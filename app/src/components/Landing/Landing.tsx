@@ -27,13 +27,9 @@ function repeatToFill(frames: PhotoAsset[], count: number): PhotoAsset[] {
 
 interface LandingProps {
   onLightTableChange: (open: boolean) => void;
-  /** "vertical" (default): portrait-aspect frames, 2 per strip — the real
-   *  site. "horizontal": landscape-aspect frames, 4 per strip — the
-   *  hidden /alt comparison layout. */
-  variant?: "vertical" | "horizontal";
 }
 
-export default function Landing({ onLightTableChange, variant = "vertical" }: LandingProps) {
+export default function Landing({ onLightTableChange }: LandingProps) {
   const [openCategory, setOpenCategory] = useState<CategoryKey | null>(null);
   const [activePlate, setActivePlate] = useState<CategoryKey | null>(null);
   const isMobile = useMediaQuery(MOBILE_QUERY);
@@ -87,24 +83,19 @@ export default function Landing({ onLightTableChange, variant = "vertical" }: La
   const plate = activePlate ? PHOTOS[activePlate].plate : null;
   const openMeta = openCategory ? CATEGORIES.find((c) => c.key === openCategory) ?? null : null;
 
-  const isHorizontal = variant === "horizontal";
-  const maxFramesPerStrip = isHorizontal ? 4 : 3;
   const strips = useMemo(
     () =>
       CATEGORIES.map((c) => ({
         meta: c,
-        frames: repeatToFill(PHOTOS[c.key].frames, maxFramesPerStrip),
+        frames: repeatToFill(PHOTOS[c.key].frames, 3),
       })),
-    [maxFramesPerStrip],
+    [],
   );
 
   // Downscaled from the base sizing per client feedback, applied multiple
-  // times now: the real site (vertical) 10%, 10%, then 20% (to help the
-  // landing page fit one viewport with no scroll), the hidden /alt
-  // comparison (horizontal) 20% once.
-  const stripVars: Record<string, string> = isHorizontal
-    ? { "--frame-aspect": "3 / 2", "--frame-width": "clamp(102px, 12.2vw, 154px)" }
-    : { "--frame-width": "clamp(62px, 7.8vw, 94px)" };
+  // times now: 10%, 10%, then 20% (to help the landing page fit one
+  // viewport with no scroll).
+  const stripVars: Record<string, string> = { "--frame-width": "clamp(62px, 7.8vw, 94px)" };
 
   if (openMeta && openCategory) {
     return (

@@ -140,6 +140,11 @@ export default function CallSheet({ presetCategory, onCategoryChange, onSuccess 
   const [touched, setTouched] = useState<Partial<Record<string, boolean>>>({});
   const [status, setStatus] = useState<SubmitStatus>("idle");
   const [success, setSuccess] = useState(false);
+  // Label for the button once a real Cal.com booking picks a date — kept
+  // separate from shared.shootDate (a plain "yyyy-mm-dd") since re-deriving
+  // a friendly weekday/month string from that date-only value risks an
+  // off-by-one day around midnight in timezones behind UTC.
+  const [calBookingLabel, setCalBookingLabel] = useState<string | null>(null);
 
   // ---- Category switching: updates fields + URL in place, never a real nav ----
   const handleCategorySelect = useCallback(
@@ -165,6 +170,14 @@ export default function CallSheet({ presetCategory, onCategoryChange, onSuccess 
   const blurCategoryField = useCallback((field: string) => {
     setTouched((prev) => ({ ...prev, [`cat.${field}`]: true }));
   }, []);
+
+  const handleCalBooked = useCallback((startTimeIso: string) => {
+    const d = new Date(startTimeIso);
+    const isoDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    setSharedField("shootDate", isoDate);
+    setTouched((prev) => ({ ...prev, shootDate: true }));
+    setCalBookingLabel(d.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" }));
+  }, [setSharedField]);
 
   const sharedErrors = useMemo(() => {
     const errors: Partial<Record<SharedFieldName, string>> = {};
@@ -196,6 +209,14 @@ export default function CallSheet({ presetCategory, onCategoryChange, onSuccess 
       location: true,
       shootDate: true,
     }));
+
+    // Hard gate, independent of BLOCK_SUBMIT_ON_VALIDATION_ERRORS above:
+    // shootDate now only ever gets set via a completed Cal.com booking
+    // (see handleCalBooked/CalendarEmbed) rather than free-typed text, so
+    // there's no "arbitrary placeholder date" case left to allow through
+    // for testing — an unpicked date means no real availability was
+    // checked at all.
+    if (!shared.shootDate) return;
 
     if (BLOCK_SUBMIT_ON_VALIDATION_ERRORS && (!category || !isValid)) return;
 
@@ -413,19 +434,11 @@ export default function CallSheet({ presetCategory, onCategoryChange, onSuccess 
         />
 
         <div className="call-sheet__row">
-          <label className="call-sheet__label mono" htmlFor="cs-shoot-date">
+          <label className="call-sheet__label mono" htmlFor="cs-shoot-date-trigger">
             SHOOT DATE
           </label>
           <div className="call-sheet__control">
-            <input
-              id="cs-shoot-date"
-              type="date"
-              value={shared.shootDate}
-              aria-describedby={touched.shootDate && sharedErrors.shootDate ? "cs-shoot-date-error" : undefined}
-              aria-invalid={Boolean(touched.shootDate && sharedErrors.shootDate)}
-              onChange={(e) => setSharedField("shootDate", e.target.value)}
-              onBlur={() => blurShared("shootDate")}
-            />
+            <CalendarEmbed onBooked={handleCalBooked} selectedLabel={calBookingLabel} />
             {touched.shootDate && sharedErrors.shootDate ? (
               <p className="call-sheet__error" id="cs-shoot-date-error" role="alert">
                 {sharedErrors.shootDate}
@@ -453,9 +466,6 @@ export default function CallSheet({ presetCategory, onCategoryChange, onSuccess 
                 </button>
               </div>
             ) : null}
-            <div className="call-sheet__calendar">
-              <CalendarEmbed />
-            </div>
           </div>
         </div>
 
@@ -497,7 +507,11 @@ export default function CallSheet({ presetCategory, onCategoryChange, onSuccess 
         ) : null}
 
         <div className="call-sheet__submit-row">
-          <button type="submit" className="call-sheet__submit" disabled={status === "pending"}>
+          <button
+            type="submit"
+            className="call-sheet__submit"
+            disabled={status === "pending" || !shared.shootDate}
+          >
             {status === "pending" ? content.copy["submit.pending"] : content.copy["submit.default"]}
           </button>
         </div>

@@ -147,10 +147,6 @@
   cursor: default;
 }
 
-.call-sheet__calendar {
-  margin-top: var(--space-4);
-}
-
 .call-sheet__calendar-heading {
   font-size: var(--text-lg);
   font-weight: 400;
@@ -162,9 +158,21 @@
   font-size: var(--text-sm);
 }
 
-.call-sheet__calendar-embed {
-  width: 100%;
-  min-height: 22rem;
+.call-sheet__calendar-trigger {
+  background: var(--bg);
+  border: 1px solid var(--rule);
+  color: var(--ink);
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--text-sm);
+  font-family: var(--font-display);
+  cursor: pointer;
+  min-height: 44px;
+  text-align: left;
+}
+
+.call-sheet__calendar-trigger:hover,
+.call-sheet__calendar-trigger:focus-visible {
+  border-color: var(--accent);
 }
 
 .call-sheet--success {

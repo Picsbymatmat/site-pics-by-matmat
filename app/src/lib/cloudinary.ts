@@ -2,29 +2,24 @@ import type { CategoryKey, CategoryPhotos, PhotoAsset } from "../types";
 import { PHOTOS } from "../data/photos";
 
 /**
- * Cloudinary wiring (§11). No account exists yet — Gavin creates it, Matt
- * gets folder upload access. Nothing here ever touches an API secret:
- * Cloudinary's Admin API (needed to *list* a folder's contents) requires
- * Basic Auth with a secret that must never reach the browser, so folder
- * listing is not done client-side against Cloudinary directly.
+ * Cloudinary wiring (§11, §12). Uses the public, unsigned tag-list endpoint
+ * — `res.cloudinary.com/{cloud}/image/list/{tag}.json` — so no API secret
+ * ever needs to exist anywhere, client or build. Requires "Resource list"
+ * enabled in Cloudinary's security settings for the account, which makes
+ * that endpoint public for any tag (acceptable: it lists derived delivery
+ * URLs, not account internals).
  *
- * The actual flow:
- * 1. A build-time script (scripts/generate-cloudinary-manifest.mjs, not yet
- *    live — needs real credentials) calls the Admin API server-side using
- *    CLOUDINARY_API_KEY / CLOUDINARY_API_SECRET (plain env vars, never
- *    VITE_-prefixed, so Vite never bundles them into client code) and
- *    writes public/cloudinary-manifest.json.
- * 2. The client fetches that static JSON file. This satisfies "build time"
- *    freshness immediately and "without a redeploy" freshness as soon as
- *    that manifest file is refreshed on a schedule or via a Cloudinary
- *    upload webhook — both Milestone 2 infra, tracked, not yet built.
- * 3. Until an account exists and that manifest is live, every call here
- *    falls back to the local placeholder manifest (src/data/photos.ts) so
- *    components never see a broken state.
+ * Tagging scheme: each category's gallery frames are tagged with the
+ * category key (`product`, `brand`, `event`, `portrait`); each category's
+ * atmosphere plate is tagged `{key}-plate`. The hero photo reuses the
+ * first frame, matching the placeholder manifest (src/data/photos.ts).
+ *
+ * Until an account exists (or a tag has nothing uploaded yet), every call
+ * here falls back to that local placeholder manifest so components never
+ * see a broken or empty state.
  */
 
 const CLOUD_NAME = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME as string | undefined;
-const MANIFEST_URL = "/cloudinary-manifest.json";
 
 export interface CloudinaryDeliveryOptions {
   width?: number;
@@ -42,30 +37,64 @@ export function buildDeliveryUrl(publicId: string, opts: CloudinaryDeliveryOptio
   return `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/${transforms}/${publicId}`;
 }
 
-let manifestCache: Partial<Record<CategoryKey, CategoryPhotos>> | null = null;
+interface CloudinaryListResource {
+  public_id: string;
+  width: number;
+  height: number;
+  context?: { custom?: { alt?: string } };
+}
 
-async function loadManifest(): Promise<Partial<Record<CategoryKey, CategoryPhotos>>> {
-  if (manifestCache) return manifestCache;
+interface CloudinaryListResponse {
+  resources: CloudinaryListResource[];
+}
+
+/** Fetches one tag's resources, sorted by public_id so Matt controls order
+ *  by filename prefix (`01-`, `02-`, per §12). Empty on any failure —
+ *  no account, tag not enabled for listing, or nothing uploaded yet. */
+async function fetchTag(tag: string): Promise<PhotoAsset[]> {
+  if (!CLOUD_NAME) return [];
   try {
-    const res = await fetch(MANIFEST_URL, { cache: "no-store" });
-    if (!res.ok) throw new Error(`manifest fetch failed: ${res.status}`);
-    manifestCache = (await res.json()) as Partial<Record<CategoryKey, CategoryPhotos>>;
-    return manifestCache;
+    const res = await fetch(`https://res.cloudinary.com/${CLOUD_NAME}/image/list/${tag}.json`, {
+      cache: "no-store",
+    });
+    if (!res.ok) return [];
+    const data = (await res.json()) as CloudinaryListResponse;
+    return data.resources
+      .slice()
+      .sort((a, b) => a.public_id.localeCompare(b.public_id))
+      .map((r) => ({
+        src: buildDeliveryUrl(r.public_id),
+        alt: r.context?.custom?.alt ?? "",
+        w: r.width,
+        h: r.height,
+      }));
   } catch {
-    // No manifest yet (no Cloudinary account, or it hasn't been generated).
-    // Fall back to placeholders rather than surface an error to a visitor.
-    manifestCache = {};
-    return manifestCache;
+    return [];
   }
 }
 
-/** Category photos for a given key: real Cloudinary manifest if available
- *  and non-empty, otherwise the local placeholder manifest. */
-export async function getCategoryPhotos(key: CategoryKey): Promise<CategoryPhotos> {
-  const manifest = await loadManifest();
-  const real = manifest[key];
-  if (real && real.frames.length > 0) return real;
-  return PHOTOS[key];
+const categoryCache = new Map<CategoryKey, Promise<CategoryPhotos>>();
+
+async function fetchCategoryPhotos(key: CategoryKey): Promise<CategoryPhotos> {
+  const [frames, plateFrames] = await Promise.all([fetchTag(key), fetchTag(`${key}-plate`)]);
+  if (frames.length === 0) return PHOTOS[key];
+  return {
+    frames,
+    plate: plateFrames[0] ?? PHOTOS[key].plate,
+    hero: frames[0],
+  };
+}
+
+/** Category photos for a given key: real Cloudinary tags if the account
+ *  has anything uploaded under them, otherwise the local placeholder
+ *  manifest. */
+export function getCategoryPhotos(key: CategoryKey): Promise<CategoryPhotos> {
+  let cached = categoryCache.get(key);
+  if (!cached) {
+    cached = fetchCategoryPhotos(key);
+    categoryCache.set(key, cached);
+  }
+  return cached;
 }
 
 /** Fetch every category up front, e.g. for preloading atmosphere plates. */

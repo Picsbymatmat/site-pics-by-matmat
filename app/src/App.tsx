@@ -6,7 +6,7 @@ import BookingRoute from "./components/BookingRoute/BookingRoute";
 import SuccessPage from "./components/SuccessPage/SuccessPage";
 import AppPlate from "./components/AppPlate/AppPlate";
 import { CATEGORY_BY_SLUG } from "./data/categories";
-import { PHOTOS } from "./data/photos";
+import { usePhotoManifest } from "./lib/usePhotoManifest";
 import type { CategoryKey } from "./types";
 import type { SuccessState } from "./components/BookingFlow/BookingFlow";
 
@@ -40,7 +40,8 @@ export default function App() {
     if (successCategory) setPlateCategory(successCategory);
   }, [successCategory]);
 
-  const plate = activeCategory ? PHOTOS[activeCategory].plate : null;
+  const photos = usePhotoManifest();
+  const plate = activeCategory ? photos[activeCategory].plate : null;
 
   return (
     <>

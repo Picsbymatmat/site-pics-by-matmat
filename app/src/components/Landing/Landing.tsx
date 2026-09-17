@@ -4,7 +4,7 @@ import CategoryView from "../CategoryView/CategoryView";
 import BookingFlow from "../BookingFlow/BookingFlow";
 import content from "../../data/content.json";
 import { CATEGORIES } from "../../data/categories";
-import { PHOTOS } from "../../data/photos";
+import { usePhotoManifest } from "../../lib/usePhotoManifest";
 import { useMediaQuery, MOBILE_QUERY } from "../../lib/useMediaQuery";
 import type { CategoryKey, PhotoAsset } from "../../types";
 import "./Landing.css";
@@ -34,6 +34,7 @@ interface LandingProps {
 }
 
 export default function Landing({ onLightTableChange, onPlateChange }: LandingProps) {
+  const photos = usePhotoManifest();
   const [openCategory, setOpenCategory] = useState<CategoryKey | null>(null);
   // Mobile only: which strip the swipe has landed on, for the dot
   // indicator (§7, Instagram-style carousel dots).
@@ -45,13 +46,13 @@ export default function Landing({ onLightTableChange, onPlateChange }: LandingPr
   // (§6 explicit requirement).
   useEffect(() => {
     CATEGORIES.forEach((c) => {
-      const plate = PHOTOS[c.key].plate;
+      const plate = photos[c.key].plate;
       if (plate) {
         const img = new Image();
         img.src = plate.src;
       }
     });
-  }, []);
+  }, [photos]);
 
   // Mobile: one strip fills the swipe at a time, so whichever strip is
   // currently landed on (scroll-snap, one discrete swipe per category —
@@ -102,9 +103,9 @@ export default function Landing({ onLightTableChange, onPlateChange }: LandingPr
     () =>
       CATEGORIES.map((c) => ({
         meta: c,
-        frames: repeatToFill(PHOTOS[c.key].frames, 3),
+        frames: repeatToFill(photos[c.key].frames, 3),
       })),
-    [],
+    [photos],
   );
 
   // Downscaled from the base sizing per client feedback, applied multiple
@@ -128,7 +129,7 @@ export default function Landing({ onLightTableChange, onPlateChange }: LandingPr
       <div className="category-page">
         <CategoryView
           category={openMeta}
-          frames={PHOTOS[openCategory].frames}
+          frames={photos[openCategory].frames}
           onReturn={handleReturn}
           onLightTableChange={onLightTableChange}
         />

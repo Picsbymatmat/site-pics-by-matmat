@@ -19,21 +19,48 @@ declare global {
   }
 }
 
-// Cal.com's official embed snippet, verbatim in structure (minified loader
-// that defines window.Cal as a queueing shim until embed.js loads), scoped
-// to run once regardless of how many CalendarEmbed instances mount.
+// Cal.com's official embed snippet, verbatim in structure. The key detail
+// a naive reimplementation misses: on the "init" call, this shim must
+// synchronously create Cal.ns[namespace] as its own queueing function
+// (mirroring Cal itself) — that's what lets an "inline"/"ui" call made
+// before embed.js has finished loading get queued correctly instead of
+// silently dropped or handed to embed.js's queue processor in a shape it
+// doesn't recognize (which throws once the real script loads).
 function loadCalEmbedScript() {
   if (window.Cal) return;
-  const Cal = ((...args: unknown[]) => {
-    const cal = Cal as unknown as { q: unknown[] };
-    cal.q = cal.q ?? [];
-    cal.q.push(args);
+  const cal = ((...args: unknown[]) => {
+    const api = cal as unknown as { q: unknown[]; ns: Record<string, unknown>; loaded?: boolean };
+    if (!api.loaded) {
+      api.ns = {};
+      api.q = api.q ?? [];
+      const script = document.createElement("script");
+      script.src = "https://app.cal.com/embed/embed.js";
+      script.async = true;
+      document.head.appendChild(script);
+      api.loaded = true;
+    }
+    if (args[0] === "init") {
+      const namespace = args[1];
+      const makeApi = () => {
+        const fn = (...innerArgs: unknown[]) => {
+          const inner = fn as unknown as { q: unknown[] };
+          inner.q = inner.q ?? [];
+          inner.q.push(innerArgs);
+        };
+        return fn as unknown as ((...a: unknown[]) => void) & { q: unknown[] };
+      };
+      if (typeof namespace === "string") {
+        api.ns[namespace] = api.ns[namespace] ?? makeApi();
+        (api.ns[namespace] as (...a: unknown[]) => void)(...args);
+        api.q.push(["initNamespace", namespace]);
+      } else {
+        api.q.push(args);
+      }
+      return;
+    }
+    api.q.push(args);
   }) as Window["Cal"];
-  window.Cal = Cal;
-  const script = document.createElement("script");
-  script.src = "https://app.cal.com/embed/embed.js";
-  script.async = true;
-  document.head.appendChild(script);
+  window.Cal = cal;
 }
 
 export default function CalendarEmbed() {
@@ -44,7 +71,7 @@ export default function CalendarEmbed() {
     if (!CAL_LINK || mounted.current) return;
     mounted.current = true;
     loadCalEmbedScript();
-    window.Cal?.("init", NAMESPACE, { origin: "https://cal.com" });
+    window.Cal?.("init", NAMESPACE, { origin: "https://app.cal.com" });
     window.Cal?.ns?.[NAMESPACE]?.("inline", {
       elementOrSelector: `#${containerId}`,
       calLink: CAL_LINK,

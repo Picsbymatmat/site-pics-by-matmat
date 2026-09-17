@@ -39,8 +39,8 @@ lead.
 1. Four shoot categories: **Professional & Product**, **Brand & Lifestyle**, **Events**,
    **Portraits**.
 2. Selecting a category shows that category's work and carries the choice into booking.
-3. A booking form collects the fields in §8 and `POST`s JSON to a configurable webhook
-   (n8n; URL from env, never hardcoded).
+3. A booking form collects the fields in §8 and `POST`s JSON to a Netlify function, which
+   emails Matt via Resend. Endpoint and keys from env, never hardcoded.
 4. A calendar shows availability and lets a visitor request a date.
 5. On success the form is replaced by a confirmation. On failure it stays filled and
    shows a recoverable error.
@@ -48,15 +48,16 @@ lead.
    Gavin.
 7. Testimonials, results figures, portfolio link, and contact details are present.
 8. Works on a 375px phone, with a keyboard, and with `prefers-reduced-motion: reduce`.
-9. Static hosting. No server beyond the webhook and third-party embeds.
+9. Static hosting on Netlify. No server beyond one form-handling function and
+   third-party embeds.
 10. The booking step is reachable directly from any point on the site and has a stable
     URL per category (`/book/product`, `/book/brand`, `/book/event`, `/book/portrait`),
     plus `/book` with no category preselected. Changing the shoot type updates fields and
     URL in place; it never navigates or reloads.
 
-### Webhook contract
+### Form submission contract
 
-`POST {BOOKING_WEBHOOK_URL}`, `Content-Type: application/json`:
+`POST /.netlify/functions/booking`, `Content-Type: application/json`:
 
 ```json
 {
@@ -77,6 +78,14 @@ lead.
 }
 ```
 
+The function validates the payload, sends Matt an email via Resend with the details
+formatted for scanning on a phone, and returns 200. Non-2xx or network error is a
+failure. Do not clear the form on failure.
+
+The Resend API key lives in Netlify's environment variables and never reaches the
+browser. No n8n, no queue, no database: the booking is an email, and an email is enough.
+Automation beyond this is a separate engagement.
+
 `name` is the person booking; `subject` is who or what the shoot is actually of (the
 earlier draft conflated these into one field labelled SUBJECT — they are now separate
 questions). Exactly one of `phone` or `instagram` is required; the other is `null`.
@@ -85,7 +94,19 @@ the earlier draft are gone, replaced by `shootDate` (from the calendar widget) p
 `timeSlot`. The delivery-target date became a two-option choice, `turnaround`, rather than
 a literal date — see §8.
 
-Non-2xx or network error is a failure. Do not clear the form on failure.
+**Current build, interim (testing convenience, not the target state):** required-field
+blocking is paused (`BLOCK_SUBMIT_ON_VALIDATION_ERRORS = false` in `CallSheet.tsx`), which
+also covers the hard requirement to choose a category before submitting — a fully blank
+form can be submitted so the flow itself can be exercised end to end. Flip back to `false`
+before launch.
+
+No simulate-success fallback for the function itself — the endpoint is a fixed path, not
+an optional env-configured URL, so there is no "unconfigured" state to detect and fall
+back from. Testing the submit flow locally, including a real email arriving via Resend,
+requires running Netlify's local dev CLI (`netlify dev`) rather than plain `vite dev`,
+which emulates the function faithfully. Deliberately no fallback that fakes success when
+the function isn't reachable — that kind of fallback is exactly the sort of thing that
+can mask a real failure close to launch.
 
 ---
 
@@ -126,6 +147,14 @@ hovered strip's label lights up. **No photograph is ever dimmed, desaturated, or
 transformed.** All four strips stay at full grade at all times. His work is never turned
 down to make an interaction feel responsive.
 
+This picked background is not landing-only: it persists as the background for the rest
+of the visit — the category view's rails, the booking call sheet, and the confirmation
+Polaroid page — until the visitor returns to landing and hovers or opens a different
+strip. It is rendered once, above the route switch, so it never remounts on navigation.
+Switching plates is always a direct crossfade from the old image to the new one; the
+previous image stays in place until the new one has fully covered it, so there is never a
+beat where the flat `--bg` shows through underneath.
+
 Above the fan, one line of copy and nothing else. Below it, a quiet, underlined link for
 people who want to see more work before deciding.
 
@@ -135,14 +164,24 @@ fixed nav size, so this holds regardless of how the nav's own height changes.
 
 ### Category view
 
-The chosen strip expands to fill the screen. Below it, horizontal rails of that
-category's photographs, drifting sideways as the visitor scrolls. Between rails, thin
-film-edge rules carrying frame markings.
+The chosen strip expands to fill the screen. `.category-view` itself is transparent, so
+the persistent atmosphere plate (see Arrival, above) shows through behind it rather than
+cutting to flat. Below the category heading, horizontal rails of that category's
+photographs, drifting sideways as the visitor scrolls.
 
-There are three rails per category, and each carries its own subtitle naming the kind of
-shot it shows — e.g. for Portraits: candids, posed, details. The subtitle sits with the
-film-edge rule above its rail, mono, quiet, not a heading. Content per category, from
-`content.json`.
+Each rail sits on its own dark (`--bg`) backing so the images stay legible over whatever
+plate is behind them — but that backing wraps only the row of images, not the label above
+it or the gaps between rows, which stay transparent to the plate.
+
+There are three rails per category. Above each is a centered label, mono, flanked by
+short dividing lines that reach in only as far as the label — never a bar spanning the
+full screen. This replaces the earlier film-edge rule and its bare frame-number markings
+(`→12 12A 13`) entirely, rather than sitting alongside them.
+
+**Current build, interim:** the labels are placeholder copy — "shoot type 1", "shoot type
+2", "shoot type 3" — rather than real per-category subtitles (e.g. for Portraits:
+candids, posed, details) naming the kind of shot each rail shows. Content per category,
+from `content.json`, same as everywhere else copy-driven.
 
 Clicking any frame puts it on the light table: the page dims to a scrim, the frame opens
 large with its sprocket edges intact and its frame number in mono in a corner, and the
@@ -155,7 +194,10 @@ someone scroll past forty photographs to find the form.
 ### The call sheet
 
 A booking form set as a production call sheet: ruled rows, mono field labels, generous
-space. Fields in §8. It is a form and behaves like one; only the styling is unusual.
+space. Fields in §8. It is a form and behaves like one; only the styling is unusual. The
+call sheet's own surface is a deliberate near-white exception to §4's dark palette — see
+§4 — so it reads as a distinct, legible card sitting on top of whatever atmosphere plate
+is behind it.
 
 The calendar sits inside this step, not before it — a visitor picks the kind of shoot,
 sees when Matt is free, and requests a date in one motion.
@@ -213,7 +255,8 @@ no live category/date/location text, no separate script sign-off — a first ste
 sign-off described above, not the finished version. The proportions have also been tuned
 away from the literal real-print mm above, as currently built: `2%` border padding
 (was `6.4972%`), `77 / 78` image window (was `77 / 79`), `77 / 18` caption strip
-(was `77 / 17`), and the card itself scaled down another 10% (`min(378px, 90vw)`).
+(was `77 / 17`), and the card itself scaled down another 10% (`min(378px, 90vw)`). On
+mobile the card is scaled down a further 20% on top of that (`72vw`, §7).
 
 The develop crossfades from a flat, undeveloped grey to the hero photograph at full
 grade — no gradient stand-in.
@@ -249,6 +292,13 @@ the default look of every generated portfolio site on the internet.
 
 Use `--accent` sparingly: interactive states and nothing else. If more than a few percent
 of the screen is accent-coloured, it is wrong.
+
+**The call sheet is a deliberate exception.** Per client feedback, its surface flips to
+near-white with dark text — locally overridden custom properties scoped to `.call-sheet`
+(`--bg`, `--surface`, `--ink`, `--muted`, `--muted-dim`, `--rule` all redefined within that
+selector), not a change to the site-wide tokens above — so the form reads as a distinct,
+legible card sitting on top of whatever atmosphere plate is behind it, rather than
+blending into the dark page.
 
 **Atmosphere plates** behind the landing fan are treated, never shown raw:
 
@@ -314,8 +364,10 @@ point.
 - **The page does not animate on load.** The strips are simply there. No drop, no
   stagger, no fade-up, no reveal. Do not add an entrance.
 - **Strip hover:** two effects, neither touching a photograph. The background plate
-  crossfades over 280ms. The hovered strip's label shifts to `--accent` and gains a 1px
-  rule, 140ms. No transform on the strip itself.
+  crossfades over 160ms — a direct swap from the old image to the new one, which stays in
+  place until the new one fully covers it, never a dip through the flat `--bg`. The
+  hovered strip's label shifts to `--accent` and gains a 1px rule, 140ms. No transform on
+  the strip itself.
   - Preload all four plates or the first hover flashes empty.
   - Debounce: commit a plate change only after 60ms of sustained hover.
   - `cursor: pointer` on all four.
@@ -342,10 +394,34 @@ point.
 
 Built first, not adapted. Most visitors arrive here from Instagram.
 
-- **Landing:** the four strips stack vertically, full-bleed, each showing two frames. In
-  place on load, no entrance. Tap replaces hover.
-- **Background plates:** whichever strip is nearest the vertical centre sets the plate,
-  via `IntersectionObserver` with a centre-band root margin. Same 280ms crossfade.
+- **Landing:** the heading sits pinned near the top of the viewport, scaled down from
+  the desktop size, not vertically centred with the rest of the content. Padding and
+  gaps throughout are tightened from desktop so heading, filmstrip, dots, and the "See
+  more work" link all still fit one screen with no scroll. Below the heading, one
+  filmstrip fills the swipe at a time — no vertical stacking. Visitors swipe
+  horizontally between the four categories, starting from the leftmost (Product)
+  through to the rightmost (Portrait), one at a time. This is a hard, discrete
+  page-swipe: each gesture lands fully on one strip before the next becomes reachable,
+  never a partial or free-scrolling position between two strips — unlike the rails
+  below, which do scroll freely. In place on load, no entrance. Tap replaces hover to
+  open a category.
+- **Sizing:** the strip is sized off viewport *height*, not width — a taller phone
+  should show a proportionally bigger strip filling the extra room, not the same strip
+  with dead space below it. Composition (strip size relative to the heading, padding,
+  and margins around it) should read the same across phone sizes; a width-driven size
+  fails this, since two phones can share a width and differ hugely in height.
+- **Carousel dots:** four small dots, Instagram-carousel style, sit below the filmstrip
+  (above the "See more work" link) and stay planted on screen — they do not move or
+  scroll with the swipe. All four are white; the one matching the strip currently on
+  screen is `--accent`. They only ever track position, never act as their own tap
+  targets.
+- **Background plates:** the background crossfades to whichever filmstrip is currently on
+  screen, updating as soon as a swipe lands on the next strip. Same crossfade as desktop
+  hover (§6) — 160ms, a direct image-to-image swap. (A version that dragged the plate
+  along with the swipe itself, one to one with the finger, was tried and reverted — the
+  outgoing/incoming plates are full-viewport images under the `.plate` blur filter, and
+  animating that filter's transform every scroll frame reads as laggy on a real phone
+  rather than attached to the finger.)
 - **Rails:** native horizontal scroll with `scroll-snap-type: x mandatory`. No parallax.
 - **Light table:** swipe between frames, tap outside or a persistent close control to
   dismiss. No pinch-zoom; fit each frame to screen. Close control always visible.
@@ -353,8 +429,9 @@ Built first, not adapted. Most visitors arrive here from Instagram.
   zoom, 44px minimum tap targets.
 - **Calendar:** the embed must be usable at 375px. Test it early; this is the most likely
   thing to be broken on a phone.
-- **Polaroid:** same animation, sized to 90vw (max 378px — see the interim proportions
-  note under Confirmation), same real-print-derived proportions.
+- **Polaroid:** same animation, sized to 72vw — scaled down a further 20% from the
+  90vw/378px max used elsewhere (see the interim proportions note under Confirmation) per
+  client feedback — same real-print-derived proportions.
 
 Breakpoint at 768px.
 
@@ -391,15 +468,21 @@ Shared fields, all categories, in order:
 | DELIVERY DATE | turnaround (two-option select) | yes |
 | NOTES | notes (textarea) | no |
 
+*(Required-field blocking is currently paused for testing — see §2's form submission
+contract note.)*
+
 **Name vs. subject.** `name` is the person booking; `subject` is who or what the shoot is
 actually of (e.g. a business name, a couple, an event). These are two separate questions,
 not one field doing double duty.
 
 **Phone or Instagram, not both required.** A single question with a method toggle
-(Phone / Instagram) and one text input, subtitled "How I'll reach out." Whichever method
-isn't chosen submits as `null`; validate that the chosen method's value is filled.
+(Phone / Instagram) and one text input, placeholder text reading "how should I reach
+you" — the separate subtitle line was dropped in favor of the prompt living directly in
+the field. Whichever method isn't chosen submits as `null`; validate that the chosen
+method's value is filled.
 
-**Email** is subtitled "How I'll deliver the photos."
+**Email**'s placeholder reads "where should I deliver your photos" — same change, no
+separate subtitle line above the field.
 
 **Shoot date** is the calendar widget from §9, plus a choice of two time slots —
 **Morning** or **Evening** — once a date is picked. Matt runs roughly one shoot a day, so
@@ -495,17 +578,54 @@ more. Quiet, in `--muted`, not a competing call to action.
 
 ---
 
-## 11. Content management
+## 11. Hosting and infrastructure
 
-**Photographs: Cloudinary free tier.** Matt uploads into a folder per category and the
-site reads that folder. He does not learn a CMS, and Cloudinary handles responsive
-resizing and format conversion, which this site needs regardless.
+| Service | Role |
+| --- | --- |
+| Netlify | Static hosting, plus the one form-handling function |
+| Cloudinary | Images — storage, transforms, and Matt's own photo library |
+| Resend | Booking emails; the API key stays server-side |
+| Cal.com | Availability; Matt owns the account |
 
-- Folder names map to category keys: `product`, `brand`, `event`, `portrait`, `plates`.
+All four run on their free tier. **Matt's only ongoing cost is domain renewal** — say this
+at handover.
+
+**Deliberately not used:** n8n, any database, any CMS, any auth. Each would add something
+to keep alive, and none earns its place at this scope.
+
+**Domain.** Point `picsbymatmat.com`'s DNS at Netlify, or deploy to a subdomain first if
+the existing portfolio needs to stay live during the transition. Confirm with Matt before
+touching DNS.
+
+**Milestone split.** M1: Netlify hosting, Cloudinary as the image source, Resend handling
+submissions — site live and bookable. M2: Cal.com calendar, Cloudinary self-service
+(public tag listing so uploads appear without a deploy, plus written instructions),
+testimonials, results, portfolio link. Cloudinary spans both milestones — a CDN in M1,
+something Matt operates himself in M2. Build the image layer once, against Cloudinary,
+from the start.
+
+---
+
+## 12. Content management
+
+**Photographs: Cloudinary free tier.** Matt uploads into a folder per category and tags
+each upload with that category's tag. He does not learn a CMS, and Cloudinary handles
+responsive resizing and format conversion, which this site needs regardless.
+
+- Folder/tag names map to category keys: `product`, `brand`, `event`, `portrait`,
+  `plates`.
 - Ordering by filename prefix (`01-`, `02-`) so he controls sequence by renaming.
 - Alt text from Cloudinary context metadata where set, with a sensible fallback.
-- Fetch the folder listing at build time, with a client-side fetch fallback so new
-  uploads appear without a redeploy.
+
+**Listing without a secret.** Cloudinary's Admin API needs an API secret and must never
+run in the browser. Use the public tag-based list endpoint instead:
+`res.cloudinary.com/{cloud}/image/list/{tag}.json`, with a tag per category. Requires
+enabling resource listing in Cloudinary's security settings. The response is CDN cached,
+so new uploads take a minute or two to appear — acceptable, and worth telling Matt so he
+doesn't think it failed.
+
+Fetch at build time for the initial render, with a client-side fetch so uploads appear
+without a redeploy.
 
 **Text content: a JSON file in the repo**, edited by Gavin on request. Testimonials,
 results figures, and copy change perhaps twice a year and do not justify a second system.
@@ -515,7 +635,7 @@ affects order, how long changes take to appear.
 
 ---
 
-## 12. Copy
+## 13. Copy
 
 - **Nav:** `Book`, `Instagram`
 - **Landing heading:** `Pick a shot.`
@@ -538,7 +658,7 @@ control and confirmation use the same verb.
 
 ---
 
-## 13. Stack and orchestration
+## 14. Stack and orchestration
 
 **Stack:** React + Vite + TypeScript, plain CSS with custom properties. No UI kit, no
 Tailwind, no animation library. Static deploy.
@@ -582,7 +702,8 @@ own folder. Each builds against placeholder data and must be independently viewa
   enlarged frame, arrow-key and Escape navigation, focus trap, focus returned to the
   originating frame on close, scroll position preserved.
 - **C — CallSheet.** All fields including per-category, blur validation, plain-language
-  errors, Cal.com embed, webhook `POST`, pending and failure states preserving input.
+  errors, Cal.com embed, `POST` to the Netlify function, pending and failure states
+  preserving input.
   Must work in two modes: category preset, and category chosen as the first field. Build
   it as a standalone view taking an optional category prop, not as a section glued to the
   bottom of the category view. Also owns routing for `/book` and `/book/:category`,
@@ -621,10 +742,11 @@ Build Phase 1 in the listed order. Nothing depends on parallelism.
 
 ---
 
-## 14. Acceptance criteria
+## 15. Acceptance criteria
 
 - [ ] Four categories, each opening its own view and carrying into booking.
-- [ ] Form validates and `POST`s the §2 payload to the env-configured webhook.
+- [ ] Form validates and `POST`s the §2 payload to the Netlify function, which emails
+      Matt via Resend.
 - [ ] Failure keeps entered data and offers retry.
 - [ ] `Book` in the nav opens the call sheet from any state, with shoot type as a
       required first field.
@@ -656,7 +778,7 @@ Build Phase 1 in the listed order. Nothing depends on parallelism.
 
 ---
 
-## 15. To be supplied by the client
+## 16. To be supplied by the client
 
 - 15–25 photographs per category, four categories, exported web-sized.
 - Four atmosphere frames for the background plates.
@@ -669,22 +791,24 @@ Build Phase 1 in the listed order. Nothing depends on parallelism.
 - Phone number and email for booking notifications.
 - Cal.com account, or agreement for Gavin to set one up.
 - Domain and current hosting details.
+- Agreement on where the site is deployed and whether DNS moves now or later.
 
 ---
 
-## 16. Still open
+## 17. Still open
 
 - Whether this replaces the current site address or lives at a new one.
 - Timeline, to be set backwards from the photo delivery date.
 - Whether the Cal.com embed is acceptable aesthetically, or a custom calendar is wanted
   later as separate work.
-- Backend automation beyond the booking webhook is out of scope and priced separately.
+- Backend automation beyond the booking function and email is out of scope and priced
+  separately.
 
 ---
 
-## 17. Milestones
+## 18. Milestones
 
-The phases in §13 describe the build sequence once, start to finish — Phase 3 does not
+The phases in §14 describe the build sequence once, start to finish — Phase 3 does not
 repeat. Milestones are a separate, client-facing axis: what "done" means at each delivery
 checkpoint, since the site runs end to end well before every real input exists.
 
@@ -693,8 +817,8 @@ checkpoint, since the site runs end to end well before every real input exists.
 - One real photo per category (frame, hero, and a distinct atmosphere plate), not the
   final 15–25 — enough to prove every component against real photography instead of
   placeholders.
-- Booking form posts to a webhook URL from an env var; no live n8n workflow behind it
-  yet.
+- Booking form posts to the Netlify function; Resend key configured, so submissions
+  really do reach Matt by email.
 - Cal.com embed present and functional against a stub/demo configuration; no production
   account required yet.
 - Supporting section (testimonials, results, portfolio link, contact) may ship empty or
@@ -704,8 +828,7 @@ checkpoint, since the site runs end to end well before every real input exists.
 
 **Milestone 2 — real inputs swap in.**
 
-- Cloudinary account created, Matt has folder upload access, full photo counts per §15.
-- Real n8n workflow behind the webhook URL.
+- Cloudinary account created, Matt has folder upload access, full photo counts per §16.
 - Real Cal.com account, configured and themed.
 - Real testimonials and results figures in `content.json`; Agent E (Supporting) built or
   revisited against them.
@@ -714,5 +837,5 @@ checkpoint, since the site runs end to end well before every real input exists.
 
 Milestone 2 does not require rebuilding Milestone 1; it is Milestone 1 with placeholders
 replaced. The two are declared here since they carry different sign-off criteria — the
-acceptance criteria in §14 are Milestone 2's bar; Milestone 1 is complete when the same
+acceptance criteria in §15 are Milestone 2's bar; Milestone 1 is complete when the same
 flow works using interim inputs without a broken or fabricated state anywhere.

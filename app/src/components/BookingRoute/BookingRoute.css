@@ -1,5 +1,12 @@
 .booking-route {
+  position: relative;
   min-height: 100vh;
+}
+
+.booking-route__content {
+  /* Stacks above App's fixed, z-index:0 plate layer. */
+  position: relative;
+  z-index: 1;
 }
 
 .booking-route__bar {

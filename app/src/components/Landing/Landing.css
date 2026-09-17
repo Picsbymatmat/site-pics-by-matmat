@@ -1,13 +1,18 @@
-/* Landing — the four-strip fan and its atmosphere plate. §3, §4, §6, §7. */
+/* Landing — the four-strip fan. §3, §4, §6, §7. The atmosphere plate
+   itself now lives in App.css, above the route switch, so it persists
+   across the whole journey instead of belonging to this page. */
 
 .category-page {
+  /* Stacks above App's fixed, z-index:0 plate layer the same way
+     .landing-content and .booking-route__content do. */
+  position: relative;
+  z-index: 1;
   display: flex;
   flex-direction: column;
 }
 
 #inline-booking {
   padding-top: var(--space-8);
-  border-top: 1px solid var(--rule);
 }
 
 .landing {
@@ -21,38 +26,6 @@
   display: flex;
   align-items: center;
   overflow: hidden;
-}
-
-.landing-plate-layer {
-  /* Fixed to the viewport, not the .landing container, so the plate
-     reaches the actual top of the page and sits behind the nav — an
-     experiment in letting Instagram/Book lay directly on the image. */
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  background: var(--bg);
-}
-
-.landing-plate {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  opacity: 0;
-  animation: landing-plate-in var(--dur-plate) ease forwards;
-}
-
-@keyframes landing-plate-in {
-  to {
-    opacity: 1;
-  }
-}
-
-.landing-plate-vignette {
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(ellipse at center, transparent 30%, var(--bg) 90%);
 }
 
 .landing-content {
@@ -80,6 +53,12 @@
   justify-content: center;
 }
 
+/* Instagram-style carousel dots, mobile only — hidden on desktop, where
+   the fan shows all four strips at once and there's nothing to track. */
+.landing-dots {
+  display: none;
+}
+
 .landing-fan__strip {
   margin-left: -0.75rem;
 }
@@ -100,43 +79,73 @@
   color: var(--ink);
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .landing-plate {
-    animation: none;
-    opacity: 1;
-  }
-}
-
 @media (max-width: 767px) {
+  /* Heading pinned near the top rather than vertically centred with the
+     rest of the content — §7. */
   .landing {
     align-items: flex-start;
   }
 
   .landing-content {
-    padding: 0 var(--space-4) var(--space-8);
-    gap: var(--space-8);
+    /* Scaled up from the earlier trims per client feedback — calc()
+       rather than a token step, since no token lands on these values.
+       Top padding (above the heading) scaled up an extra 10% on its own. */
+    padding: calc(var(--space-2) * 1.39755) calc(var(--space-4) * 1.05) calc(var(--space-6) * 1.05);
+    gap: calc(var(--space-4) * 1.05);
   }
 
+  .landing-heading {
+    font-size: var(--text-xl);
+  }
+
+  .landing-dots {
+    display: flex;
+    gap: var(--space-2);
+  }
+
+  .landing-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--ink);
+  }
+
+  .landing-dot--active {
+    background: var(--accent);
+  }
+
+  /* One strip fills the swipe at a time, a hard discrete swipe between
+     categories rather than a free scroll — §7. scroll-snap-stop forces
+     each swipe to land on the next strip, never skip past it. */
   .landing-fan {
-    flex-direction: column;
     width: 100%;
+    /* Overrides the desktop rule's justify-content: center — centering an
+       overflow-x: auto flex row makes browsers start it scrolled to the
+       middle of its content instead of at the first strip. */
+    justify-content: flex-start;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .landing-fan::-webkit-scrollbar {
+    display: none;
   }
 
   .landing-fan__strip {
-    margin-left: 0;
-    margin-top: -0.375rem;
+    flex: 0 0 100%;
     width: 100%;
+    margin: 0;
+    display: flex;
+    justify-content: center;
+    scroll-snap-align: center;
+    scroll-snap-stop: always;
   }
 
-  .landing-fan__strip:first-child {
-    margin-top: 0;
-  }
-
-  /* Full-bleed strips on mobile (§7), overriding Filmstrip's default
-     content-sized width — a layout concern that belongs to whoever
-     composes the fan, per Filmstrip.css's own note. */
-  .landing-fan__strip .filmstrip,
-  .landing-fan__strip .filmstrip-frames {
-    width: 100%;
+  /* The overlapping fan angle only reads with several strips visible
+     together; one at a time, each renders upright instead. */
+  .landing-fan__strip .filmstrip {
+    transform: none;
   }
 }

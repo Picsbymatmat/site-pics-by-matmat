@@ -40,7 +40,7 @@
   --space-24: 6rem;
 
   /* Motion durations, referenced by components, never hardcoded inline */
-  --dur-plate: 280ms;
+  --dur-plate: 160ms;
   --dur-label: 140ms;
   --dur-expand: 650ms;
   --dur-rails-in: 300ms;

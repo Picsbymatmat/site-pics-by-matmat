@@ -1,7 +1,22 @@
 /* The call sheet — a production call sheet as a booking form. §3, §8. */
 
 .call-sheet {
+  /* Local near-white treatment for the form itself, flipped from the
+     site-wide dark palette in tokens.css — scoped here so the rest of
+     the site stays untouched. */
+  --bg: #f2f0ec;
+  --surface: #f2f0ec;
+  --ink: #19191c;
+  --muted: #38383f;
+  --muted-dim: #6b6860;
+  --rule: #d8d5cd;
+
   background: var(--surface);
+  /* `color` inherits as an already-resolved value, so descendants that
+     don't set their own color (e.g. .call-sheet__above) would otherwise
+     keep the site's near-white text instead of picking up the --ink
+     redefined above. Setting it here re-resolves it in this scope. */
+  color: var(--ink);
   border: 1px solid var(--rule);
   padding: var(--space-8);
   max-width: 40rem;
@@ -73,12 +88,6 @@
 .call-sheet__control select:focus,
 .call-sheet__control textarea:focus {
   border-color: var(--accent);
-}
-
-.call-sheet__subtitle {
-  color: var(--muted-dim);
-  font-size: var(--text-sm);
-  margin: 0;
 }
 
 .call-sheet__method-toggle {

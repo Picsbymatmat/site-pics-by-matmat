@@ -1,0 +1,38 @@
+.app-plate-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  background: var(--bg);
+}
+
+.app-plate {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.app-plate--entering {
+  opacity: 0;
+  animation: app-plate-in var(--dur-plate) ease forwards;
+}
+
+@keyframes app-plate-in {
+  to {
+    opacity: 1;
+  }
+}
+
+.app-plate-vignette {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, transparent 30%, var(--bg) 90%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-plate--entering {
+    animation: none;
+    opacity: 1;
+  }
+}

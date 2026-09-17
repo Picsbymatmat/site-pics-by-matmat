@@ -1,4 +1,9 @@
 .success-page {
+  /* Stacks above App's fixed, z-index:0 plate layer, same as
+     .landing-content/.category-page/.booking-route__content — otherwise
+     this plain block would paint below the fixed plate and be hidden. */
+  position: relative;
+  z-index: 1;
   /* Exactly the viewport minus Nav's real measured height (Nav.tsx sets
      --nav-height), rather than a separate 100vh of its own — that's what
      lets this page fit one screen with no scroll, without resorting to a

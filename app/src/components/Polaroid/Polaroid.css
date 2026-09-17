@@ -189,6 +189,7 @@
 
 @media (max-width: 768px) {
   .polaroid__frame {
-    width: 90vw;
+    /* Scaled down 20% from the previous 90vw per client feedback. */
+    width: 72vw;
   }
 }

@@ -88,6 +88,12 @@ type SubmitStatus = "idle" | "pending" | "failure";
 // payload is meaningless without one. Flip back to true before launch.
 const BLOCK_SUBMIT_ON_VALIDATION_ERRORS = false;
 
+// Also paused for testing: no real webhook is wired up yet, so treat a
+// missing VITE_BOOKING_WEBHOOK_URL as a simulated success (payload logged
+// to the console) instead of failing every submit attempt. Flip to false
+// once a real webhook URL is set for launch.
+const SIMULATE_SUCCESS_WITHOUT_WEBHOOK = true;
+
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function sharedFieldError(field: SharedFieldName, values: SharedFieldValues): string | null {
@@ -95,15 +101,15 @@ function sharedFieldError(field: SharedFieldName, values: SharedFieldValues): st
   const trimmed = typeof value === "string" ? value.trim() : "";
   switch (field) {
     case "name":
-      return trimmed ? null : "Add your name so Matt knows who's booking.";
+      return trimmed ? null : "Add your name so I knows who's booking.";
     case "contactValue":
       return trimmed
         ? null
         : values.contactMethod === "phone"
-          ? "Add a phone number so Matt can text you."
-          : "Add your Instagram handle so Matt can reach you.";
+          ? "Add a phone number so I can reach you."
+          : "Add your Instagram so I can reach you.";
     case "email":
-      if (!trimmed) return "Add an email so Matt can send the photos to you.";
+      if (!trimmed) return "Add an email so I can send the photos to you.";
       if (!EMAIL_RE.test(trimmed)) return "That email doesn't look right — check it and try again.";
       return null;
     case "subject":
@@ -111,7 +117,7 @@ function sharedFieldError(field: SharedFieldName, values: SharedFieldValues): st
     case "location":
       return trimmed ? null : "Say where the shoot will be held.";
     case "shootDate":
-      return trimmed ? null : "Pick a date so Matt knows when you're hoping to shoot.";
+      return trimmed ? null : "Pick a date so I know when you're hoping to shoot.";
     default:
       return null;
   }
@@ -191,13 +197,18 @@ export default function CallSheet({ presetCategory, onCategoryChange, onSuccess 
       shootDate: true,
     }));
 
-    if (!category || (BLOCK_SUBMIT_ON_VALIDATION_ERRORS && !isValid)) return;
+    if (BLOCK_SUBMIT_ON_VALIDATION_ERRORS && (!category || !isValid)) return;
+
+    // Testing convenience per client feedback (see BLOCK_SUBMIT_ON_VALIDATION_ERRORS
+    // above): even with no category chosen, fall back to the first one so a
+    // fully blank form can still submit and produce a valid payload shape.
+    const effectiveCategory = category ?? CATEGORIES[0].key;
 
     const webhookUrl = import.meta.env.VITE_BOOKING_WEBHOOK_URL as string | undefined;
 
     const contactValue = shared.contactValue.trim() || null;
     const payload: BookingPayload = {
-      category,
+      category: effectiveCategory,
       name: shared.name.trim(),
       subject: shared.subject.trim(),
       email: shared.email.trim(),
@@ -208,20 +219,33 @@ export default function CallSheet({ presetCategory, onCategoryChange, onSuccess 
       turnaround: shared.turnaround,
       location: shared.location.trim(),
       notes: shared.notes.trim() ? shared.notes.trim() : null,
-      categoryFields: { ...categoryFields[category] },
+      categoryFields: { ...categoryFields[effectiveCategory] },
       submittedAt: new Date().toISOString(),
       source: "picsbymatmat-booking",
     };
 
     setStatus("pending");
     try {
-      if (!webhookUrl) throw new Error("Missing VITE_BOOKING_WEBHOOK_URL");
-      const res = await fetch(webhookUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      if (!res.ok) throw new Error(`Webhook responded ${res.status}`);
+      if (!webhookUrl) {
+        // Paused for testing (see BLOCK_SUBMIT_ON_VALIDATION_ERRORS above):
+        // no webhook is hooked up yet, so rather than hard-failing every
+        // submit attempt — which made it impossible to reach the
+        // success/Polaroid flow at all — log the payload and proceed as if
+        // it sent. Flip SIMULATE_SUCCESS_WITHOUT_WEBHOOK to false once a
+        // real webhook URL is set for launch.
+        if (SIMULATE_SUCCESS_WITHOUT_WEBHOOK) {
+          console.info("[booking] no VITE_BOOKING_WEBHOOK_URL set — payload:", payload);
+        } else {
+          throw new Error("Missing VITE_BOOKING_WEBHOOK_URL");
+        }
+      } else {
+        const res = await fetch(webhookUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        if (!res.ok) throw new Error(`Webhook responded ${res.status}`);
+      }
       setStatus("idle");
       setSuccess(true);
       onSuccess(payload);
@@ -259,7 +283,6 @@ export default function CallSheet({ presetCategory, onCategoryChange, onSuccess 
             PHONE OR INSTAGRAM
           </label>
           <div className="call-sheet__control">
-            <p className="call-sheet__subtitle">How I'll reach out.</p>
             <div className="call-sheet__method-toggle" role="radiogroup" aria-label="Contact method">
               <button
                 type="button"
@@ -283,7 +306,7 @@ export default function CallSheet({ presetCategory, onCategoryChange, onSuccess 
             <input
               id="cs-contact"
               type={shared.contactMethod === "phone" ? "tel" : "text"}
-              placeholder={shared.contactMethod === "phone" ? "(555) 555-5555" : "@handle"}
+              placeholder="how should I reach you"
               value={shared.contactValue}
               autoComplete={shared.contactMethod === "phone" ? "tel" : undefined}
               aria-describedby={touched.contactValue && sharedErrors.contactValue ? "cs-contact-error" : undefined}
@@ -304,11 +327,11 @@ export default function CallSheet({ presetCategory, onCategoryChange, onSuccess 
             EMAIL
           </label>
           <div className="call-sheet__control">
-            <p className="call-sheet__subtitle">How I'll deliver the photos.</p>
             <input
               id="cs-email"
               type="email"
               value={shared.email}
+              placeholder="where should I deliver your photos"
               autoComplete="email"
               aria-describedby={touched.email && sharedErrors.email ? "cs-email-error" : undefined}
               aria-invalid={Boolean(touched.email && sharedErrors.email)}

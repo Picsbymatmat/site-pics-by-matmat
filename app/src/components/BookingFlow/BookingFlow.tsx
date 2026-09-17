@@ -10,6 +10,11 @@ interface BookingFlowProps {
    *  the category from the URL itself, so this is only needed when
    *  embedding the flow outside that route (the inline case). */
   presetCategory: CategoryKey | null;
+  /** Fires whenever CallSheet's own shoot-type dropdown changes the
+   *  category, so the app-wide background pick stays in sync with manual
+   *  selection too, not just Landing's hover/open. Optional: the callers
+   *  that don't care about the persistent background can omit it. */
+  onCategoryChange?: (key: CategoryKey) => void;
 }
 
 /** Success-page navigation state — category/date/location travel with the
@@ -24,7 +29,7 @@ export interface SuccessState {
 /** Call sheet for the standalone /book route and the inline booking
  *  section under a category's gallery (§3). On success, navigates to
  *  /success with the booking details as router state. */
-export default function BookingFlow({ presetCategory }: BookingFlowProps) {
+export default function BookingFlow({ presetCategory, onCategoryChange }: BookingFlowProps) {
   const navigate = useNavigate();
 
   const handleSuccess = useCallback(
@@ -41,7 +46,11 @@ export default function BookingFlow({ presetCategory }: BookingFlowProps) {
 
   return (
     <div className="booking-flow">
-      <CallSheet presetCategory={presetCategory} onCategoryChange={() => {}} onSuccess={handleSuccess} />
+      <CallSheet
+        presetCategory={presetCategory}
+        onCategoryChange={onCategoryChange ?? (() => {})}
+        onSuccess={handleSuccess}
+      />
     </div>
   );
 }

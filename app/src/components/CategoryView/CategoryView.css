@@ -1,7 +1,8 @@
 .category-view {
+  /* Transparent so App's persistent atmosphere plate shows through behind
+     the rails, matching the fan on Landing instead of cutting to flat. */
   position: relative;
   min-height: 100vh;
-  background: var(--bg);
   color: var(--ink);
   padding-bottom: var(--space-24);
 }
@@ -34,11 +35,13 @@
   font-weight: 700;
 }
 
-/* Rails fade in as one group, not staggered per row. §6 "Category open". */
+/* Rails fade in as one group, not staggered per row. §6 "Category open".
+   Gap upped 50% (var(--space-6) * 1.5) — the top/bottom margin around
+   each row's label + image block. */
 .category-rails {
   display: flex;
   flex-direction: column;
-  gap: var(--space-6);
+  gap: calc(var(--space-6) * 1.5);
   animation: category-rails-in var(--dur-rails-in) ease-in-out;
 }
 
@@ -57,6 +60,40 @@
   gap: var(--space-3);
 }
 
+/* A centered "---text---" divider, replacing the old edge-to-edge frame-
+   number rule — the lines reach in only to flank the centered label,
+   never spanning the full screen width. */
+.category-rail-label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  /* An explicit width (not max-width) so the flex:1 line spacers below
+     have room to grow into — margin:auto centering on a flex item with
+     width:auto would otherwise shrink the box to fit the text and starve
+     them of space. */
+  width: min(32rem, 100%);
+  margin: 0 auto;
+  color: var(--ink);
+  font-size: var(--text-lg);
+}
+
+.category-rail-label::before,
+.category-rail-label::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--rule);
+}
+
+.category-rail-viewport {
+  /* Dark backing for the image row only — deliberately not on
+     .category-rail-block as a whole, so the label above and the gap
+     between rows stay transparent and let App's atmosphere plate show
+     through there instead. */
+  background: var(--bg);
+  padding: var(--space-3) 0;
+}
+
 .category-rail-track {
   display: flex;
   gap: var(--space-3);
@@ -67,7 +104,7 @@
 /* Desktop: overflow clipped, JS-driven translate3d parallax handles
    horizontal drift. */
 @media (min-width: 768px) {
-  .category-rail-block {
+  .category-rail-viewport {
     overflow-x: clip;
   }
 }
@@ -103,20 +140,6 @@
   height: 100%;
   object-fit: cover;
   aspect-ratio: 4 / 5;
-}
-
-.category-rail-rule {
-  display: flex;
-  align-items: center;
-  padding: 0 var(--space-4);
-  height: 28px;
-  border-top: 1px solid var(--rule);
-  border-bottom: 1px solid var(--rule);
-  color: var(--muted);
-  font-size: var(--text-xs);
-  letter-spacing: 0.04em;
-  overflow: hidden;
-  white-space: nowrap;
 }
 
 .category-empty {

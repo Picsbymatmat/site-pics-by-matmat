@@ -27,11 +27,17 @@ function repeatToFill(frames: PhotoAsset[], count: number): PhotoAsset[] {
 
 interface LandingProps {
   onLightTableChange: (open: boolean) => void;
+  /** Reports every hover/open back up to App's app-wide background pick,
+   *  which is what actually persists it into /book/:category and /success —
+   *  Landing itself no longer renders a plate of its own. */
+  onPlateChange: (key: CategoryKey) => void;
 }
 
-export default function Landing({ onLightTableChange }: LandingProps) {
+export default function Landing({ onLightTableChange, onPlateChange }: LandingProps) {
   const [openCategory, setOpenCategory] = useState<CategoryKey | null>(null);
-  const [activePlate, setActivePlate] = useState<CategoryKey | null>(null);
+  // Mobile only: which strip the swipe has landed on, for the dot
+  // indicator (§7, Instagram-style carousel dots).
+  const [mobileIndex, setMobileIndex] = useState(0);
   const isMobile = useMediaQuery(MOBILE_QUERY);
   const stripRefs = useRef<Partial<Record<CategoryKey, HTMLDivElement | null>>>({});
 
@@ -47,40 +53,49 @@ export default function Landing({ onLightTableChange }: LandingProps) {
     });
   }, []);
 
-  // Mobile: whichever strip sits nearest the vertical centre sets the
-  // plate, via a centre-band IntersectionObserver root margin (§7).
+  // Mobile: one strip fills the swipe at a time, so whichever strip is
+  // currently landed on (scroll-snap, one discrete swipe per category —
+  // §7) sets the plate — the strip with the highest intersection ratio.
   useEffect(() => {
     if (!isMobile) return;
     const observer = new IntersectionObserver(
       (entries) => {
-        const centred = entries.find((e) => e.isIntersecting);
-        if (centred) {
-          const key = (centred.target as HTMLElement).dataset.categoryKey as CategoryKey;
-          setActivePlate(key);
+        const landed = entries.reduce<IntersectionObserverEntry | null>(
+          (best, e) => (e.intersectionRatio > (best?.intersectionRatio ?? 0) ? e : best),
+          null,
+        );
+        if (landed && landed.intersectionRatio > 0.5) {
+          const key = (landed.target as HTMLElement).dataset.categoryKey as CategoryKey;
+          onPlateChange(key);
+          const index = CATEGORIES.findIndex((c) => c.key === key);
+          if (index !== -1) setMobileIndex(index);
         }
       },
-      { rootMargin: "-45% 0px -45% 0px", threshold: 0 },
+      { threshold: [0.5, 0.75, 1] },
     );
     Object.values(stripRefs.current).forEach((el) => el && observer.observe(el));
     return () => observer.disconnect();
-  }, [isMobile]);
+  }, [isMobile, onPlateChange]);
 
   const handleHoverStart = useCallback(
     (key: CategoryKey) => {
-      if (!isMobile) setActivePlate(key);
+      if (!isMobile) onPlateChange(key);
     },
-    [isMobile],
+    [isMobile, onPlateChange],
   );
 
-  const handleOpen = useCallback((key: CategoryKey) => {
-    setOpenCategory(key);
-  }, []);
+  const handleOpen = useCallback(
+    (key: CategoryKey) => {
+      setOpenCategory(key);
+      onPlateChange(key);
+    },
+    [onPlateChange],
+  );
 
   const handleReturn = useCallback(() => {
     setOpenCategory(null);
   }, []);
 
-  const plate = activePlate ? PHOTOS[activePlate].plate : null;
   const openMeta = openCategory ? CATEGORIES.find((c) => c.key === openCategory) ?? null : null;
 
   const strips = useMemo(
@@ -94,8 +109,19 @@ export default function Landing({ onLightTableChange }: LandingProps) {
 
   // Downscaled from the base sizing per client feedback, applied multiple
   // times now: 10%, 10%, then 20% (to help the landing page fit one
-  // viewport with no scroll).
-  const stripVars: Record<string, string> = { "--frame-width": "clamp(62px, 7.8vw, 94px)" };
+  // viewport with no scroll). Mobile shows one strip at a time rather than
+  // four overlapping, so it gets its own clamp (§7) — scaled down 35%, then
+  // back up 10% twice, per client feedback.
+  //
+  // Mobile's preferred value is tied to viewport *height* (dvh), not
+  // width — the whole point of the mobile layout is one strip filling the
+  // available vertical space, so a taller phone should show a bigger strip
+  // rather than leaving dead space below it, the way a vw-based value did.
+  // min() with a vw figure is just a horizontal safety rail so a narrow
+  // but unusually tall viewport can't blow out sideways.
+  const stripVars: Record<string, string> = {
+    "--frame-width": isMobile ? "clamp(64px, min(13dvh, 30vw), 130px)" : "clamp(62px, 7.8vw, 94px)",
+  };
 
   if (openMeta && openCategory) {
     return (
@@ -107,7 +133,7 @@ export default function Landing({ onLightTableChange }: LandingProps) {
           onLightTableChange={onLightTableChange}
         />
         <div id={INLINE_BOOKING_ID}>
-          <BookingFlow presetCategory={openCategory} />
+          <BookingFlow presetCategory={openCategory} onCategoryChange={onPlateChange} />
         </div>
       </div>
     );
@@ -115,14 +141,6 @@ export default function Landing({ onLightTableChange }: LandingProps) {
 
   return (
     <div className="landing">
-      <div className="landing-plate-layer" aria-hidden="true">
-        {plate ? (
-          <img key={plate.src} className="landing-plate plate" src={plate.src} alt="" />
-        ) : null}
-        <div className="landing-plate-vignette" />
-        <div className="grain-overlay" />
-      </div>
-
       <div className="landing-content">
         <p className="landing-heading">{content.copy["landing.heading"]}</p>
 
@@ -146,6 +164,17 @@ export default function Landing({ onLightTableChange }: LandingProps) {
                 onOpen={handleOpen}
               />
             </div>
+          ))}
+        </div>
+
+        {/* Mobile only (hidden on desktop via CSS): Instagram-style carousel
+            dots tracking which strip the swipe has landed on. */}
+        <div className="landing-dots" role="presentation">
+          {CATEGORIES.map((c, i) => (
+            <span
+              key={c.key}
+              className={`landing-dot${i === mobileIndex ? " landing-dot--active" : ""}`}
+            />
           ))}
         </div>
 

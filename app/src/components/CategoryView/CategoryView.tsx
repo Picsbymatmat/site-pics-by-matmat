@@ -53,20 +53,6 @@ function frameLabel(index: number): string {
   return String(index + 1).padStart(2, "0");
 }
 
-// Frame-number rule content between rails, e.g. "→01 02 03 04". Bare
-// numerals only — no manufacturer/stock names, per spec §5.
-function railMarkings(row: RailItem[]): string {
-  const seen = new Set<number>();
-  const numbers: string[] = [];
-  for (const item of row) {
-    if (seen.has(item.originalIndex)) continue;
-    seen.add(item.originalIndex);
-    numbers.push(frameLabel(item.originalIndex));
-    if (numbers.length >= 8) break;
-  }
-  return `→${numbers.join(" ")}`;
-}
-
 export default function CategoryView({
   category,
   frames,
@@ -217,35 +203,33 @@ export default function CategoryView({
         <div className="category-rails" aria-label={`${category.label} photographs`}>
           {displayRows.map((row, rowIndex) => (
             <div className="category-rail-block" key={rowIndex}>
-              <div
-                className="category-rail-track"
-                ref={(el) => {
-                  rowRefs.current[rowIndex] = el;
-                }}
-              >
-                {row.map((item, itemIndex) => (
-                  <button
-                    type="button"
-                    className="category-frame"
-                    key={`${itemIndex}-${item.originalIndex}`}
-                    onClick={(e) => openLightTable(item.originalIndex, e.currentTarget)}
-                    aria-label={`Open photograph ${frameLabel(item.originalIndex)}: ${item.frame.alt}`}
-                  >
-                    <img
-                      src={item.frame.src}
-                      alt={item.frame.alt}
-                      width={item.frame.w}
-                      height={item.frame.h}
-                      loading="lazy"
-                    />
-                  </button>
-                ))}
-              </div>
-              {rowIndex < displayRows.length - 1 && (
-                <div className="category-rail-rule mono" aria-hidden="true">
-                  {railMarkings(row)}
+              <p className="category-rail-label mono">shoot type {rowIndex + 1}</p>
+              <div className="category-rail-viewport">
+                <div
+                  className="category-rail-track"
+                  ref={(el) => {
+                    rowRefs.current[rowIndex] = el;
+                  }}
+                >
+                  {row.map((item, itemIndex) => (
+                    <button
+                      type="button"
+                      className="category-frame"
+                      key={`${itemIndex}-${item.originalIndex}`}
+                      onClick={(e) => openLightTable(item.originalIndex, e.currentTarget)}
+                      aria-label={`Open photograph ${frameLabel(item.originalIndex)}: ${item.frame.alt}`}
+                    >
+                      <img
+                        src={item.frame.src}
+                        alt={item.frame.alt}
+                        width={item.frame.w}
+                        height={item.frame.h}
+                        loading="lazy"
+                      />
+                    </button>
+                  ))}
                 </div>
-              )}
+              </div>
             </div>
           ))}
         </div>

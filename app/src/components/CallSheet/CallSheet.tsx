@@ -11,7 +11,6 @@ import type {
   EventFields,
   PortraitFields,
   ProductFields,
-  TimeSlot,
   Turnaround,
 } from "../../types";
 import "./CallSheet.css";
@@ -34,7 +33,6 @@ interface SharedFieldValues {
   subject: string;
   location: string;
   shootDate: string;
-  timeSlot: TimeSlot | "";
   turnaround: Turnaround;
   notes: string;
 }
@@ -47,7 +45,6 @@ const EMPTY_SHARED: SharedFieldValues = {
   subject: "",
   location: "",
   shootDate: "",
-  timeSlot: "",
   turnaround: "standard",
   notes: "",
 };
@@ -236,7 +233,6 @@ export default function CallSheet({ presetCategory, onCategoryChange, onSuccess 
       phone: shared.contactMethod === "phone" ? contactValue : null,
       instagram: shared.contactMethod === "instagram" ? contactValue : null,
       shootDate: shared.shootDate,
-      timeSlot: shared.timeSlot ? shared.timeSlot : null,
       turnaround: shared.turnaround,
       location: shared.location.trim(),
       notes: shared.notes.trim() ? shared.notes.trim() : null,
@@ -443,28 +439,6 @@ export default function CallSheet({ presetCategory, onCategoryChange, onSuccess 
               <p className="call-sheet__error" id="cs-shoot-date-error" role="alert">
                 {sharedErrors.shootDate}
               </p>
-            ) : null}
-            {shared.shootDate ? (
-              <div className="call-sheet__method-toggle" role="radiogroup" aria-label="Time of day">
-                <button
-                  type="button"
-                  role="radio"
-                  aria-checked={shared.timeSlot === "morning"}
-                  className={`call-sheet__method-btn${shared.timeSlot === "morning" ? " call-sheet__method-btn--active" : ""}`}
-                  onClick={() => setSharedField("timeSlot", "morning")}
-                >
-                  Morning
-                </button>
-                <button
-                  type="button"
-                  role="radio"
-                  aria-checked={shared.timeSlot === "evening"}
-                  className={`call-sheet__method-btn${shared.timeSlot === "evening" ? " call-sheet__method-btn--active" : ""}`}
-                  onClick={() => setSharedField("timeSlot", "evening")}
-                >
-                  Evening
-                </button>
-              </div>
             ) : null}
           </div>
         </div>

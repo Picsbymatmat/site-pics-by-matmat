@@ -41,6 +41,20 @@ export default function LightTable({ frames, index, onClose, onNavigate, reduced
     return () => mql.removeEventListener("change", handler);
   }, []);
 
+  // Lock the page's own scroll while the light table is open — the scrim
+  // is a fixed full-viewport overlay, so without this the page behind it
+  // can still scroll (wheel/keyboard), just invisibly.
+  useEffect(() => {
+    const previousBodyOverflow = document.body.style.overflow;
+    const previousHtmlOverflow = document.documentElement.style.overflow;
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previousBodyOverflow;
+      document.documentElement.style.overflow = previousHtmlOverflow;
+    };
+  }, []);
+
   const goPrev = useCallback(() => {
     onNavigate((index - 1 + count) % count);
   }, [index, count, onNavigate]);

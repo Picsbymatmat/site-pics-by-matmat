@@ -70,7 +70,6 @@ export type CategoryFieldsByKey = {
   portrait: PortraitFields;
 };
 
-export type TimeSlot = "morning" | "evening";
 export type Turnaround = "standard" | "rush";
 
 export interface BookingPayload {
@@ -81,7 +80,6 @@ export interface BookingPayload {
   phone: string | null;
   instagram: string | null;
   shootDate: string;
-  timeSlot: TimeSlot | null;
   turnaround: Turnaround;
   location: string;
   notes: string | null;

@@ -8,12 +8,10 @@ const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
 
 // Rates from spec §6 "Rails". Index order matches row order.
 const PARALLAX_RATES = [-0.35, 0.22, -0.5];
-// Starting offset into `frames` for each row — every row appears to begin
-// scrolling from the same viewport position (PARALLAX_INITIAL_OFFSET below
-// is shared across all rows), but each one's underlying frame sequence
-// starts further along than the last, so the second row opens one image
-// further left than the first, the third two further left, and so on.
-const ROW_OFFSETS = [0, 1, 2];
+// Starting offset into `frames` for each row — the second row's underlying
+// frame sequence starts one image further along than the first and third
+// (which both start on the same frame), for visual variety between rows.
+const ROW_OFFSETS = [0, 1, 0];
 // Extra frames appended to each row's target length, per row index — one
 // more added to every row (the third row now carries two extra on top of
 // the shared baseline).
@@ -22,11 +20,12 @@ const ROW_EXTRA = [1, 1, 2];
 // without letting a tall page fling rails far off-screen.
 const PARALLAX_SCALE = 0.4;
 const PARALLAX_CLAMP = 480;
-// Baseline shift applied to every row before scroll-linked parallax, so
-// rails open already scrolled halfway into the first frame (matches
-// .category-frame's fixed desktop width) rather than starting flush on
-// its left edge.
-const PARALLAX_INITIAL_OFFSET = -120;
+// Baseline shift applied to each row before scroll-linked parallax. Rows
+// after the first open already scrolled halfway into their first frame
+// (matches .category-frame's fixed desktop width) for visual variety —
+// but the first row is what a visitor actually lands on, so it opens
+// flush on its left edge, fully visible, rather than half-cut-off.
+const PARALLAX_INITIAL_OFFSETS = [0, -120, -120];
 
 interface RailItem {
   frame: PhotoAsset;
@@ -106,7 +105,8 @@ export default function CategoryView({
         if (!el) return;
         const rate = PARALLAX_RATES[i] ?? 0;
         const x = clamp(y * rate * PARALLAX_SCALE, -PARALLAX_CLAMP, PARALLAX_CLAMP);
-        el.style.transform = `translate3d(${PARALLAX_INITIAL_OFFSET + x}px, 0, 0)`;
+        const initialOffset = PARALLAX_INITIAL_OFFSETS[i] ?? 0;
+        el.style.transform = `translate3d(${initialOffset + x}px, 0, 0)`;
       });
       rafId = requestAnimationFrame(tick);
     };

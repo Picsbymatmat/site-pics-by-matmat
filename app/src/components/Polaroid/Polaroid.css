@@ -82,13 +82,11 @@
   filter: none;
 }
 
-/* No hero photo yet for this category: a generic placeholder image
-   (spec: PhotoAsset hero === null) develops the same way a real hero
-   photo would — grayscale/flat to full contrast — with a warm gradient
-   wash and the confirmation text crossfading in on top together, as one
-   resolving exposure. grain-overlay and the image-area vignette (both
-   painted after this in the DOM/pseudo-element order) sit above every
-   layer throughout. */
+/* Every Polaroid develops from this flat grey — real hero photo or the
+   generic placeholder alike — with a warm gradient wash crossfading in
+   on top, as one resolving exposure. grain-overlay and the image-area
+   vignette (both painted after this in the DOM/pseudo-element order) sit
+   above every layer throughout. */
 .polaroid__develop {
   position: relative;
   width: 100%;
@@ -96,10 +94,9 @@
   background: #8a8a86;
 }
 
-/* Unlike a real hero photo (visible in grayscale from the start), this
-   placeholder stays fully hidden behind the flat grey background until
-   develop — it fades in at the same moment as the tint and text, so the
-   whole exposure resolves together rather than showing a photo early. */
+/* Stays fully hidden behind the flat grey background until develop — it
+   fades in at the same moment as the tint, so the whole exposure resolves
+   together rather than showing the photo early. */
 .polaroid__develop .polaroid__photo {
   opacity: 0;
   transition-property: opacity, filter;

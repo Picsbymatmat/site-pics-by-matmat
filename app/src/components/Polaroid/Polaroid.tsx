@@ -70,43 +70,34 @@ export default function Polaroid({ category, hero, reducedMotion }: PolaroidProp
     >
       <div className="polaroid__frame">
         <div className="polaroid__image-area">
-          {hero ? (
+          {/* Every Polaroid develops from full flat grey, real hero photo
+             or not — a real photo is hidden behind that grey the same way
+             the generic placeholder is, rather than being visible in a
+             desaturated state from the start. */}
+          <div className="polaroid__develop">
             <img
               className={`polaroid__photo${developed ? " polaroid__photo--developed" : ""}`}
-              src={hero.src}
-              alt={hero.alt}
-              width={hero.w}
-              height={hero.h}
+              src={hero ? hero.src : "/images/placeholder/polaroid/develop.png"}
+              alt={hero ? hero.alt : ""}
+              aria-hidden={hero ? undefined : true}
+              width={hero?.w}
+              height={hero?.h}
               style={
                 reducedMotion
                   ? undefined
                   : { transitionDuration: `${developMsForStyle}ms` }
               }
             />
-          ) : (
-            <div className="polaroid__develop">
-              <img
-                className={`polaroid__photo${developed ? " polaroid__photo--developed" : ""}`}
-                src="/images/placeholder/polaroid/develop.png"
-                alt=""
-                aria-hidden="true"
-                style={
-                  reducedMotion
-                    ? undefined
-                    : { transitionDuration: `${developMsForStyle}ms` }
-                }
-              />
-              <div
-                className={`polaroid__tint${developed ? " polaroid__tint--developed" : ""}`}
-                style={
-                  reducedMotion
-                    ? undefined
-                    : { transitionDuration: `${developMsForStyle}ms` }
-                }
-                aria-hidden="true"
-              />
-            </div>
-          )}
+            <div
+              className={`polaroid__tint${developed ? " polaroid__tint--developed" : ""}`}
+              style={
+                reducedMotion
+                  ? undefined
+                  : { transitionDuration: `${developMsForStyle}ms` }
+              }
+              aria-hidden="true"
+            />
+          </div>
           <div className="grain-overlay" />
         </div>
         <figcaption className="polaroid__margin">

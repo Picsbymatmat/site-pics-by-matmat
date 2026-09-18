@@ -2,6 +2,7 @@ import { Link, Navigate, useLocation } from "react-router-dom";
 import Polaroid from "../Polaroid/Polaroid";
 import content from "../../data/content.json";
 import { CATEGORIES } from "../../data/categories";
+import { usePhotoManifest } from "../../lib/usePhotoManifest";
 import { useMediaQuery, REDUCED_MOTION_QUERY } from "../../lib/useMediaQuery";
 import type { SuccessState } from "../BookingFlow/BookingFlow";
 import "./SuccessPage.css";
@@ -10,6 +11,7 @@ export default function SuccessPage() {
   const location = useLocation();
   const state = location.state as SuccessState | null;
   const reducedMotion = useMediaQuery(REDUCED_MOTION_QUERY);
+  const photos = usePhotoManifest();
 
   // Reached without going through a submission (refresh, stale link, typed
   // URL) — there's no booking to confirm, so there's nothing to show.
@@ -19,7 +21,9 @@ export default function SuccessPage() {
 
   return (
     <div className="success-page">
-      {meta ? <Polaroid category={meta} hero={null} reducedMotion={reducedMotion} /> : null}
+      {meta ? (
+        <Polaroid category={meta} hero={photos[state.category].hero} reducedMotion={reducedMotion} />
+      ) : null}
       <Link className="success-page__back mono" to="/">
         ← {content.copy["landing.backLink"]}
       </Link>

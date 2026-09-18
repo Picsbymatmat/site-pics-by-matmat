@@ -19,15 +19,20 @@ export interface PhotoAsset {
 }
 
 export interface CategoryPhotos {
-  /** Filmstrip + category-view rail source. Empty array = no real photos yet
-   *  for this category: components must render a neutral placeholder block,
-   *  never a broken image and never fabricated photography. */
-  frames: PhotoAsset[];
-  /** Background atmosphere plate. Null = fall back to a flat --surface tint,
-   *  never stretch a frame photo to fill the plate role. */
-  plate: PhotoAsset | null;
-  /** Polaroid confirmation hero. Null = Polaroid develops to a flat tint
-   *  with the handwritten line only, no image. */
+  /** Landing filmstrip's 3 fixed preview slots, Cloudinary-tagged
+   *  {key}-film1/2/3 — each its own exact, designated photo, not a pool.
+   *  A null slot renders as a neutral placeholder block (Filmstrip), never
+   *  a broken image and never fabricated photography. */
+  film: [PhotoAsset | null, PhotoAsset | null, PhotoAsset | null];
+  /** CategoryView's 3 rail rows, each its own independent pool of photos,
+   *  Cloudinary-tagged {key}-shoot1/2/3. An empty row renders with no
+   *  frames rather than borrowing from another row. */
+  rows: [PhotoAsset[], PhotoAsset[], PhotoAsset[]];
+  /** Background atmosphere plate, tagged {key}-background. Null = fall
+   *  back to a flat --surface tint, never stretch a frame photo into it. */
+  background: PhotoAsset | null;
+  /** Polaroid confirmation hero, tagged {key}-hero. Null = Polaroid
+   *  develops to a flat tint with the handwritten line only, no image. */
   hero: PhotoAsset | null;
 }
 
@@ -114,14 +119,18 @@ export interface SiteContent {
 
 export interface FilmstripProps {
   category: CategoryMeta;
-  frames: PhotoAsset[];
+  /** Exactly 3 slots (film1/2/3) — a null entry renders as a placeholder
+   *  block, not a repeated/borrowed frame. */
+  frames: (PhotoAsset | null)[];
   onHoverStart: (key: CategoryKey) => void;
   onOpen: (key: CategoryKey) => void;
 }
 
 export interface CategoryViewProps {
   category: CategoryMeta;
-  frames: PhotoAsset[];
+  /** One independent pool per rail row (shoot1/2/3) — rows no longer
+   *  share a single frame sequence. */
+  rows: [PhotoAsset[], PhotoAsset[], PhotoAsset[]];
   onReturn: () => void;
   /** Phase 2: nav must hide while the light table is open (§3, §14). */
   onLightTableChange?: (open: boolean) => void;

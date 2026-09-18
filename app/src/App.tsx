@@ -41,7 +41,7 @@ export default function App() {
   }, [successCategory]);
 
   const photos = usePhotoManifest();
-  const plate = activeCategory ? photos[activeCategory].plate : null;
+  const plate = activeCategory ? photos[activeCategory].background : null;
 
   return (
     <>

@@ -90,9 +90,11 @@ export default function Filmstrip({ category, frames, onHoverStart, onOpen }: Fi
     [handleActivate],
   );
 
-  const hasFrames = frames.length > 0;
   // 3-4 frames per spec §3; if more are supplied, only show the first 4.
-  const shown = hasFrames ? frames.slice(0, 4) : [null, null, null];
+  // Each slot is its own designated tag now (film1/2/3, §11) — a null
+  // entry means that slot's tag has nothing uploaded yet, rendered as its
+  // own placeholder block rather than borrowing another slot's photo.
+  const shown = frames.slice(0, 4);
 
   return (
     <div

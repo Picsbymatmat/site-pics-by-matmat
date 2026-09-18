@@ -6,7 +6,7 @@ import content from "../../data/content.json";
 import { CATEGORIES } from "../../data/categories";
 import { usePhotoManifest } from "../../lib/usePhotoManifest";
 import { useMediaQuery, MOBILE_QUERY } from "../../lib/useMediaQuery";
-import type { CategoryKey, PhotoAsset } from "../../types";
+import type { CategoryKey } from "../../types";
 import "./Landing.css";
 
 // Alternating off-vertical angles for the loose overlapping fan, §3: "each
@@ -15,15 +15,6 @@ import "./Landing.css";
 const STRIP_ROTATIONS = ["-4deg", "3deg", "-3deg", "5deg"];
 
 const INLINE_BOOKING_ID = "inline-booking";
-
-// Cycles through whatever real frames exist to fill a strip's frame count,
-// same wrap-around allowance CategoryView uses for its rails — a category
-// with only one real photo yet still previews the intended 2- or 4-tall
-// layout instead of looking broken.
-function repeatToFill(frames: PhotoAsset[], count: number): PhotoAsset[] {
-  if (frames.length === 0) return [];
-  return Array.from({ length: count }, (_, i) => frames[i % frames.length]);
-}
 
 interface LandingProps {
   onLightTableChange: (open: boolean) => void;
@@ -46,10 +37,10 @@ export default function Landing({ onLightTableChange, onPlateChange }: LandingPr
   // (§6 explicit requirement).
   useEffect(() => {
     CATEGORIES.forEach((c) => {
-      const plate = photos[c.key].plate;
-      if (plate) {
+      const background = photos[c.key].background;
+      if (background) {
         const img = new Image();
-        img.src = plate.src;
+        img.src = background.src;
       }
     });
   }, [photos]);
@@ -103,7 +94,7 @@ export default function Landing({ onLightTableChange, onPlateChange }: LandingPr
     () =>
       CATEGORIES.map((c) => ({
         meta: c,
-        frames: repeatToFill(photos[c.key].frames, 3),
+        frames: photos[c.key].film,
       })),
     [photos],
   );
@@ -129,7 +120,7 @@ export default function Landing({ onLightTableChange, onPlateChange }: LandingPr
       <div className="category-page">
         <CategoryView
           category={openMeta}
-          frames={photos[openCategory].frames}
+          rows={photos[openCategory].rows}
           onReturn={handleReturn}
           onLightTableChange={onLightTableChange}
         />

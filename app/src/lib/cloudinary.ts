@@ -9,14 +9,23 @@ import { PHOTOS } from "../data/photos";
  * that endpoint public for any tag (acceptable: it lists derived delivery
  * URLs, not account internals).
  *
- * Tagging scheme: each category's gallery frames are tagged with the
- * category key (`product`, `brand`, `event`, `portrait`); each category's
- * atmosphere plate is tagged `{key}-plate`. The hero photo reuses the
- * first frame, matching the placeholder manifest (src/data/photos.ts).
+ * Tagging scheme, one tag per slot — no shared pool with index math, each
+ * slot is Matt's own explicit choice:
+ *   {key}-film1/2/3    — landing filmstrip's 3 fixed preview slots (one
+ *                         exact photo each, first match wins if a tag
+ *                         somehow has more than one).
+ *   {key}-shoot1/2/3   — CategoryView's 3 rail rows, each its own
+ *                         independent pool (as many photos as tagged).
+ *   {key}-background   — atmosphere plate.
+ *   {key}-hero         — Polaroid confirmation photo.
  *
- * Until an account exists (or a tag has nothing uploaded yet), every call
- * here falls back to that local placeholder manifest so components never
- * see a broken or empty state.
+ * Until an account exists (or a category has nothing tagged under any of
+ * its slots yet), every call here falls back to that local placeholder
+ * manifest so components never see a broken or empty state. Once a
+ * category has *any* real content tagged, individual still-untagged
+ * slots stay genuinely empty/null rather than silently borrowing a local
+ * placeholder photo — components already render those as neutral
+ * placeholder blocks, never fabricated or borrowed photography.
  */
 
 const CLOUD_NAME = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME as string | undefined;
@@ -76,12 +85,27 @@ async function fetchTag(tag: string): Promise<PhotoAsset[]> {
 const categoryCache = new Map<CategoryKey, Promise<CategoryPhotos>>();
 
 async function fetchCategoryPhotos(key: CategoryKey): Promise<CategoryPhotos> {
-  const [frames, plateFrames] = await Promise.all([fetchTag(key), fetchTag(`${key}-plate`)]);
-  if (frames.length === 0) return PHOTOS[key];
+  const [film1, film2, film3, shoot1, shoot2, shoot3, backgroundTag, heroTag] = await Promise.all([
+    fetchTag(`${key}-film1`),
+    fetchTag(`${key}-film2`),
+    fetchTag(`${key}-film3`),
+    fetchTag(`${key}-shoot1`),
+    fetchTag(`${key}-shoot2`),
+    fetchTag(`${key}-shoot3`),
+    fetchTag(`${key}-background`),
+    fetchTag(`${key}-hero`),
+  ]);
+
+  const film: CategoryPhotos["film"] = [film1[0] ?? null, film2[0] ?? null, film3[0] ?? null];
+  const rows: CategoryPhotos["rows"] = [shoot1, shoot2, shoot3];
+  const hasAnyReal = film.some(Boolean) || rows.some((row) => row.length > 0);
+  if (!hasAnyReal) return PHOTOS[key];
+
   return {
-    frames,
-    plate: plateFrames[0] ?? PHOTOS[key].plate,
-    hero: frames[0],
+    film,
+    rows,
+    background: backgroundTag[0] ?? null,
+    hero: heroTag[0] ?? null,
   };
 }
 

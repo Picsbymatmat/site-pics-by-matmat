@@ -8,10 +8,12 @@ const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
 
 // Rates from spec §6 "Rails". Index order matches row order.
 const PARALLAX_RATES = [-0.35, 0.22, -0.5];
-// Starting offset into `frames` for each row — the middle row starts one
-// frame further along ("one more image to the left") so it doesn't open
-// on the same frame as the top row.
-const ROW_OFFSETS = [0, 2, 2];
+// Starting offset into `frames` for each row — every row appears to begin
+// scrolling from the same viewport position (PARALLAX_INITIAL_OFFSET below
+// is shared across all rows), but each one's underlying frame sequence
+// starts further along than the last, so the second row opens one image
+// further left than the first, the third two further left, and so on.
+const ROW_OFFSETS = [0, 1, 2];
 // Extra frames appended to each row's target length, per row index — one
 // more added to every row (the third row now carries two extra on top of
 // the shared baseline).

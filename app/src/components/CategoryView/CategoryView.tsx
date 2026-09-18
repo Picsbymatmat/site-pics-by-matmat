@@ -20,10 +20,16 @@ const ROW_EXTRA = [1, 1, 2];
 // without letting a tall page fling rails far off-screen.
 const PARALLAX_SCALE = 0.4;
 const PARALLAX_CLAMP = 480;
-// Baseline shift applied to each row before scroll-linked parallax — all
-// zero, so every row opens flush on its left edge with its first frame
-// fully visible, rather than half-cut-off.
-const PARALLAX_INITIAL_OFFSETS = [0, 0, 0];
+// .category-frame's fixed desktop width (240px) plus the rail track's gap
+// (--space-3, 12px) — one full frame-and-gap's width, used below to shift
+// the second row left by exactly one frame.
+const FRAME_STEP = 240 + 12;
+// Baseline shift applied to each row before scroll-linked parallax. Rows
+// 1 and 3 open flush on their left edge, first frame fully visible. Row 2
+// opens shifted left by one full frame so its *second* frame lands in
+// that same spot — its first frame sits just off-screen to the left,
+// matching ROW_OFFSETS' one-image head start for row 2.
+const PARALLAX_INITIAL_OFFSETS = [0, -FRAME_STEP, 0];
 
 interface RailItem {
   frame: PhotoAsset;

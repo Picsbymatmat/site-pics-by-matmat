@@ -24,12 +24,20 @@ const PARALLAX_CLAMP = 480;
 // (--space-3, 12px) — one full frame-and-gap's width, used below to shift
 // the second row left by exactly one frame.
 const FRAME_STEP = 240 + 12;
+// Extra nudge left, applied to all three rows together so their relative
+// alignment is untouched: shifting row 2 by exactly one FRAME_STEP lines
+// its second frame up with rows 1/3's first frame, but its now off-screen
+// first frame's trailing edge lands 4px past the clip boundary — a sliver
+// still peeking in. Padding (--space-4, 16px) inside the track gives
+// rows 1/3 plenty of room to absorb this same nudge without their own
+// first frame losing any visible width.
+const CLIP_MARGIN = 8;
 // Baseline shift applied to each row before scroll-linked parallax. Rows
-// 1 and 3 open flush on their left edge, first frame fully visible. Row 2
-// opens shifted left by one full frame so its *second* frame lands in
-// that same spot — its first frame sits just off-screen to the left,
-// matching ROW_OFFSETS' one-image head start for row 2.
-const PARALLAX_INITIAL_OFFSETS = [0, -FRAME_STEP, 0];
+// 1 and 3 open flush (minus the margin above), first frame fully visible.
+// Row 2 opens shifted left by one full frame plus that margin, so its
+// *second* frame lands in that same spot and its first frame is fully
+// hidden, not just moved mostly off-screen.
+const PARALLAX_INITIAL_OFFSETS = [-CLIP_MARGIN, -(FRAME_STEP + CLIP_MARGIN), -CLIP_MARGIN];
 
 interface RailItem {
   frame: PhotoAsset;

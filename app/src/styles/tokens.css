@@ -40,7 +40,8 @@
   --space-24: 6rem;
 
   /* Motion durations, referenced by components, never hardcoded inline */
-  --dur-plate: 160ms;
+  --dur-plate: 280ms;
+  --dur-strip-raise: 220ms;
   --dur-label: 140ms;
   --dur-expand: 650ms;
   --dur-rails-in: 300ms;
@@ -73,6 +74,7 @@
 @media (prefers-reduced-motion: reduce) {
   :root {
     --dur-plate: 0ms;
+    --dur-strip-raise: 0ms;
     --dur-label: 0ms;
     --dur-expand: 0ms;
     --dur-rails-in: 0ms;

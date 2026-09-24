@@ -8,10 +8,13 @@ const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
 
 // Rates from spec §6 "Rails". Index order matches row order.
 const PARALLAX_RATES = [-0.35, 0.22, -0.5];
-// Extra frames appended to each row's target length, per row index — one
-// more added to every row (the third row now carries two extra on top of
-// the shared baseline).
-const ROW_EXTRA = [1, 1, 2];
+// §3: a row repeats its own real photos (cloudinary.ts already sorts by
+// public_id, so the repeat cycle stays in filename order) to fill out to
+// this many images — desktop 10, mobile 5 — unless the row already has
+// more real photos than that, in which case it shows all of them once,
+// with no repeats.
+const ROW_FILL_TARGET_DESKTOP = 10;
+const ROW_FILL_TARGET_MOBILE = 5;
 // Scales raw scrollY into a translate distance; keeps the drift readable
 // without letting a tall page fling rails far off-screen.
 const PARALLAX_SCALE = 0.4;
@@ -44,15 +47,18 @@ function clamp(v: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, v));
 }
 
-// Builds one row's display sequence by cycling its own independent pool
-// (§11: shoot1/2/3, one per row, no longer a shared frame array with an
-// index offset between rows). Categories may have very few real photos
-// yet in a given row's pool — the row repeats/wraps what it has rather
-// than coming up short, per spec §3's explicit allowance.
-function buildRow(frames: PhotoAsset[], targetLength: number): RailItem[] {
+// Builds one row's display sequence from its own independent pool (§11:
+// shoot1/2/3, one per row). §3: below `target`, the row cycles its real
+// photos to fill out to that length (a fixed, finite list — not the old
+// infinite-scroll illusion, see the §7 note near the mobile effect below);
+// at or above `target`, it shows every real photo once, no repeats.
+function buildRow(frames: PhotoAsset[], target: number): RailItem[] {
   if (frames.length === 0) return [];
+  if (frames.length >= target) {
+    return frames.map((frame, originalIndex) => ({ frame, originalIndex }));
+  }
   const out: RailItem[] = [];
-  for (let i = 0; i < targetLength; i++) {
+  for (let i = 0; i < target; i++) {
     const originalIndex = i % frames.length;
     out.push({ frame: frames[originalIndex], originalIndex });
   }
@@ -96,12 +102,10 @@ export default function CategoryView({
 
   const railRows = useMemo(
     () =>
-      rows.map((rowFrames, i) => {
-        if (rowFrames.length === 0) return [];
-        const targetLength = Math.max(rowFrames.length, 6);
-        return buildRow(rowFrames, targetLength + ROW_EXTRA[i]);
-      }),
-    [rows],
+      rows.map((rowFrames) =>
+        buildRow(rowFrames, isMobile ? ROW_FILL_TARGET_MOBILE : ROW_FILL_TARGET_DESKTOP),
+      ),
+    [rows, isMobile],
   );
 
   // Single shared rAF loop driving all rows' parallax, per spec §6 ("one
@@ -137,44 +141,12 @@ export default function CategoryView({
     }
   }, [isMobile, reducedMotion]);
 
-  // Mobile rails read as infinitely repeating while side-scrolling: each
-  // row's frame sequence is tripled, the scroll position starts at the
-  // middle copy, and crossing into the first or last copy jumps back to
-  // the middle copy by exactly one set's width — imperceptible since the
-  // three copies are identical, so the loop has no visible seam.
-  const displayRows = useMemo(() => {
-    if (!isMobile) return railRows;
-    return railRows.map((row) => [...row, ...row, ...row]);
-  }, [railRows, isMobile]);
-
-  useEffect(() => {
-    if (!isMobile || railRows.length === 0) return;
-
-    const tracks = rowRefs.current.filter((el): el is HTMLDivElement => el !== null);
-
-    // Start each track scrolled to its middle copy.
-    tracks.forEach((el) => {
-      el.scrollLeft = el.scrollWidth / 3;
-    });
-
-    const handlers = tracks.map((el) => {
-      const handleScroll = () => {
-        const oneSet = el.scrollWidth / 3;
-        if (oneSet <= 0) return;
-        if (el.scrollLeft < oneSet * 0.5) {
-          el.scrollLeft += oneSet;
-        } else if (el.scrollLeft > oneSet * 1.5) {
-          el.scrollLeft -= oneSet;
-        }
-      };
-      el.addEventListener("scroll", handleScroll, { passive: true });
-      return { el, handleScroll };
-    });
-
-    return () => {
-      handlers.forEach(({ el, handleScroll }) => el.removeEventListener("scroll", handleScroll));
-    };
-  }, [isMobile, railRows]);
+  // §7/§15: rails do not loop — no infinite scroll, no wraparound, no
+  // tripled copies or scroll-position rewriting. railRows above may repeat
+  // a sparse row's real photos to fill out the mobile/desktop threshold,
+  // but that list is fixed and finite: native scroll-snap in
+  // CategoryView.css just scrolls it like any other row and stops at the
+  // real end.
 
   const openLightTable = useCallback(
     (rowIndex: number, index: number, el: HTMLElement) => {
@@ -216,7 +188,7 @@ export default function CategoryView({
 
       {hasAnyRow ? (
         <div className="category-rails" aria-label={`${category.label} photographs`}>
-          {displayRows.map((row, rowIndex) => (
+          {railRows.map((row, rowIndex) => (
             <div className="category-rail-block" key={rowIndex}>
               <p className="category-rail-label mono">shoot type {rowIndex + 1}</p>
               <div className="category-rail-viewport">

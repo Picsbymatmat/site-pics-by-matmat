@@ -72,6 +72,8 @@ export type CategoryFieldsByKey = {
 
 export type Turnaround = "standard" | "rush";
 
+export type TimeSlot = "morning" | "midday" | "evening";
+
 export interface BookingPayload {
   category: CategoryKey;
   name: string;
@@ -80,6 +82,16 @@ export interface BookingPayload {
   phone: string | null;
   instagram: string | null;
   shootDate: string;
+  /** Named slot the visitor picked from real Cal.com availability (§8,
+   *  §9) — Cal.com owns the real hours behind each name, configured
+   *  seasonally in its own dashboard, not here. Null until a date/slot
+   *  has been picked. */
+  timeSlot: TimeSlot | null;
+  /** Exact ISO start time of that same slot, as Cal.com's availability API
+   *  returned it — what the booking function actually books against.
+   *  shootDate/timeSlot are the human-facing display fields; this is the
+   *  machine one. Null until a slot has been picked. */
+  slotStart: string | null;
   turnaround: Turnaround;
   location: string;
   notes: string | null;

@@ -40,7 +40,9 @@ lead.
    **Portraits**.
 2. Selecting a category shows that category's work and carries the choice into booking.
 3. A booking form collects the fields in §8 and `POST`s JSON to a Netlify function, which
-   emails Matt via Resend. Endpoint and keys from env, never hardcoded.
+   creates a pending Cal.com booking. If that fails, the submission falls through to a
+   Netlify Forms post so Matt is still notified. No third-party email service. Endpoint
+   and keys from env, never hardcoded.
 4. A calendar shows availability and lets a visitor request a date.
 5. On success the form is replaced by a confirmation. On failure it stays filled and
    shows a recoverable error.
@@ -68,7 +70,8 @@ lead.
   "phone": "string | null",
   "instagram": "string | null",
   "shootDate": "YYYY-MM-DD | null",
-  "timeSlot": "morning" | "evening" | null,
+  "timeSlot": "morning" | "midday" | "evening" | null,
+  "slotStart": "ISO-8601 string | null",
   "turnaround": "standard" | "rush",
   "location": "string",
   "notes": "string | null",
@@ -78,21 +81,26 @@ lead.
 }
 ```
 
-The function validates the payload, sends Matt an email via Resend with the details
-formatted for scanning on a phone, and returns 200. Non-2xx or network error is a
+The function validates the payload and creates a pending booking against the requested
+date and slot in Cal.com, and returns 200. If the Cal.com request fails, the function
+falls through to posting the submission to Netlify Forms so Matt is still notified by
+email, and still returns 200. Non-2xx or network error from the function itself is a
 failure. Do not clear the form on failure.
 
-The Resend API key lives in Netlify's environment variables and never reaches the
-browser. No n8n, no queue, no database: the booking is an email, and an email is enough.
-Automation beyond this is a separate engagement.
+All keys live in Netlify's environment variables and never reach the browser. No n8n, no
+queue, no database, and no email vendor: Netlify handles hosting, the function, and the
+fallback notification. Automation beyond this is a separate engagement.
 
 `name` is the person booking; `subject` is who or what the shoot is actually of (the
 earlier draft conflated these into one field labelled SUBJECT — they are now separate
 questions). Exactly one of `phone` or `instagram` is required; the other is `null`.
 `location` is required (see §8 — it changed from optional). `preferredDate`/`altDate` from
-the earlier draft are gone, replaced by `shootDate` (from the calendar widget) plus
-`timeSlot`. The delivery-target date became a two-option choice, `turnaround`, rather than
-a literal date — see §8.
+the earlier draft are gone, replaced by `shootDate` (from the date/slot picker) plus
+`timeSlot`. `slotStart` is the exact ISO start time Cal.com's own availability API
+returned for that slot — `shootDate`/`timeSlot` are the human-facing display fields (§8),
+`slotStart` is what the booking function actually books against, so the visitor always
+gets the real slot they saw rather than a guessed time. The delivery-target date became a
+two-option choice, `turnaround`, rather than a literal date — see §8.
 
 **Current build, interim (testing convenience, not the target state):** required-field
 blocking is paused (`BLOCK_SUBMIT_ON_VALIDATION_ERRORS = false` in `CallSheet.tsx`), which
@@ -102,11 +110,11 @@ before launch.
 
 No simulate-success fallback for the function itself — the endpoint is a fixed path, not
 an optional env-configured URL, so there is no "unconfigured" state to detect and fall
-back from. Testing the submit flow locally, including a real email arriving via Resend,
-requires running Netlify's local dev CLI (`netlify dev`) rather than plain `vite dev`,
-which emulates the function faithfully. Deliberately no fallback that fakes success when
-the function isn't reachable — that kind of fallback is exactly the sort of thing that
-can mask a real failure close to launch.
+back from. Testing the submit flow locally, including a real Cal.com booking and the
+Netlify Forms fallback, requires running Netlify's local dev CLI (`netlify dev`) rather
+than plain `vite dev`, which emulates the function faithfully. Deliberately no fallback
+that fakes success when the function isn't reachable — that kind of fallback is exactly
+the sort of thing that can mask a real failure close to launch.
 
 ---
 
@@ -143,9 +151,15 @@ Under each strip, its category name in mono. This is the only navigation.
 
 Hovering a strip changes the room it hangs in: the background crossfades to one of
 Matt's atmosphere frames, held well back — heavily darkened, grained, vignetted. The
-hovered strip's label lights up. **No photograph is ever dimmed, desaturated, or
-transformed.** All four strips stay at full grade at all times. His work is never turned
-down to make an interaction feel responsive.
+hovered strip's label lights up. **No photograph is ever dimmed or desaturated.**
+Hovering a strip raises it: it scales to 1.1 and lifts above its neighbours in the
+stacking order, so the strip you are choosing is fully visible rather than half-covered
+by the ones overlapping it. The scale is smooth, 220ms, and the strip returns when the
+cursor leaves. The background plate crossfades and the label lights up as before.
+
+This reverses an earlier instruction that strips receive no transform on hover. With the
+fan overlapping, the raise is functional rather than decorative: it resolves which strip
+is under the cursor. Do not remove it.
 
 This picked background is not landing-only: it persists as the background for the rest
 of the visit — the category view's rails, the booking call sheet, and the confirmation
@@ -177,6 +191,10 @@ There are three rails per category. Above each is a centered label, mono, flanke
 short dividing lines that reach in only as far as the label — never a bar spanning the
 full screen. This replaces the earlier film-edge rule and its bare frame-number markings
 (`→12 12A 13`) entirely, rather than sitting alongside them.
+
+Each rail row repeats its photos to fill out to 10 images on desktop, 5 on mobile —
+unless the category already has more real photos than that threshold, in which case it
+shows all of them once, with no repeats.
 
 **Current build, interim:** the labels are placeholder copy — "shoot type 1", "shoot type
 2", "shoot type 3" — rather than real per-category subtitles (e.g. for Portraits:
@@ -363,11 +381,11 @@ point.
 
 - **The page does not animate on load.** The strips are simply there. No drop, no
   stagger, no fade-up, no reveal. Do not add an entrance.
-- **Strip hover:** two effects, neither touching a photograph. The background plate
-  crossfades over 160ms — a direct swap from the old image to the new one, which stays in
-  place until the new one fully covers it, never a dip through the flat `--bg`. The
-  hovered strip's label shifts to `--accent` and gains a 1px rule, 140ms. No transform on
-  the strip itself.
+- **Strip hover:** background plate crossfades over 280ms; the hovered strip scales to
+  1.1 over 220ms and is raised above its neighbours via z-index; its label shifts to
+  `--accent` with a 1px rule. Manage stacking explicitly — the fan has a natural
+  back-to-front order that must be restored on mouse leave. No photograph is dimmed or
+  desaturated at any point.
   - Preload all four plates or the first hover flashes empty.
   - Debounce: commit a plate change only after 60ms of sustained hover.
   - `cursor: pointer` on all four.
@@ -417,17 +435,25 @@ Built first, not adapted. Most visitors arrive here from Instagram.
   targets.
 - **Background plates:** the background crossfades to whichever filmstrip is currently on
   screen, updating as soon as a swipe lands on the next strip. Same crossfade as desktop
-  hover (§6) — 160ms, a direct image-to-image swap. (A version that dragged the plate
+  hover (§6) — 280ms, a direct image-to-image swap. (A version that dragged the plate
   along with the swipe itself, one to one with the finger, was tried and reverted — the
   outgoing/incoming plates are full-viewport images under the `.plate` blur filter, and
   animating that filter's transform every scroll frame reads as laggy on a real phone
   rather than attached to the finger.)
 - **Rails:** native horizontal scroll with `scroll-snap-type: x mandatory`. No parallax.
+- **No horizontal page scroll on the category view.** `overflow-x: hidden` on the page;
+  the rails are the only horizontally scrollable containers. Nothing about the page
+  itself should move sideways under a thumb.
+- **Rails do not loop.** No infinite scroll, no wraparound — scrolling never jumps back
+  to the start. Each rail has a real first image and a real last image and stops there.
+  Below the fill-out threshold (5 on mobile, §3) a row repeats its available photos to
+  reach it; that repeat is a fixed, finite list built once, not an infinite-scroll
+  illusion.
 - **Light table:** swipe between frames, tap outside or a persistent close control to
   dismiss. No pinch-zoom; fit each frame to screen. Close control always visible.
 - **Call sheet:** single column, labels above inputs, inputs at least 16px to prevent iOS
   zoom, 44px minimum tap targets.
-- **Calendar:** the embed must be usable at 375px. Test it early; this is the most likely
+- **Calendar:** the date/slot picker must be usable at 375px. Test it early; this is the most likely
   thing to be broken on a phone.
 - **Polaroid:** same animation, sized to 72vw — scaled down a further 20% from the
   90vw/378px max used elsewhere (see the interim proportions note under Confirmation) per
@@ -484,9 +510,10 @@ method's value is filled.
 **Email**'s placeholder reads "where should I deliver your photos" — same change, no
 separate subtitle line above the field.
 
-**Shoot date** is the calendar widget from §9, plus a choice of two time slots —
-**Morning** or **Evening** — once a date is picked. Matt runs roughly one shoot a day, so
-this is which half of that day, not a precise time.
+**Shoot date** is the calendar widget from §9, plus a choice of time slot once a date is
+picked. Three slots per day: morning, midday, and evening. Label them by name in the
+picker rather than by raw time, since the underlying hours shift seasonally and evening
+is the golden-hour slot people actually want.
 
 **Delivery date** is not a literal date — it is a two-option select asking how soon the
 visitor needs the photos, since that is what actually determines whether a rush fee comes
@@ -528,30 +555,56 @@ On mobile they sit below the form, not beside it.
 
 ## 9. Calendar
 
-**Behaviour: request, not instant booking.** A visitor picks a preferred date; Matt
-confirms. He runs roughly one shoot a day and blocks out days he is busy, so availability
-is day-level, not time-slot-level. Pricing and duration vary enough across the four
-categories that he will want a conversation before anything is locked. Instant booking
-would also let someone hold a peak-season Saturday for free and then vanish.
+**Behaviour: request, not instant booking.** A visitor picks a preferred date and slot;
+Matt confirms. Pricing and duration vary enough across the four categories that he will
+want a conversation before anything is locked. Instant booking would also let someone
+hold a peak-season Saturday for free and then vanish.
 
-**Morning or evening is a preference, not a slot Cal.com books against.** Once a date is
-picked, the call sheet asks which half of the day works better — a plain either/or choice
-alongside the widget, submitted as `timeSlot`, not a second Cal.com availability axis.
-Availability stays day-level for the reasons above; the time-of-day choice just gives Matt
-something to work with when he confirms.
+**Implementation: Cal.com (free tier) as the availability source, read through a Netlify
+function rather than embedded.** Matt manages availability entirely in Cal.com's own
+interface — nothing here builds a calendar of its own. What the visitor sees, though, is
+this site's own date input plus three named slot buttons, styled to match the rest of
+the page, not a Cal.com iframe:
 
-**Implementation: embed Cal.com (free tier)**, configured for day-long request-mode
-bookings. Matt manages availability in Cal.com's own interface rather than one built
-here. Theme it as close to the palette as the embed allows.
+- A visitor picks a date; the call sheet asks `GET /.netlify/functions/slots` for that
+  date and category, which proxies Cal.com's own availability API server-side (the
+  Cal.com API key never reaches the browser) and returns which of the day's three named
+  slots are actually open.
+- Nothing is booked at this point — picking a slot only fills in the call sheet's own
+  `shootDate`/`timeSlot` fields plus the exact slot time to submit. The one and only
+  place a real Cal.com booking gets created is the booking function on full submission
+  (see Flow, below) — never the picker itself. An earlier version of this spec called for
+  embedding Cal.com's own booking widget directly, but Cal.com's popup creates a real
+  booking the moment a visitor completes it there, which would have meant two competing
+  booking attempts (one from the widget, one from the function) for a single submission.
+  Reading availability through this site's own picker and leaving booking-creation solely
+  to the function avoids that.
 
-Known tradeoff, already raised with the client: the embed will not look as bespoke as the
-rest of the site. A custom month grid reading his Google Calendar would look better and
-cost a meaningful share of the budget. If he chooses that later it slots in behind the
-same interface.
+- Three slots per day per event type, configured in Cal.com's availability and
+  slot-interval settings, not in the website. Roughly morning, midday, and evening. Matt
+  can move the hours seasonally without anyone touching the site.
 
-The calendar sits inside the call sheet step, directly under the shoot date field, with no
-separate heading above it — cut per client feedback. A visitor should not have to hunt for
-it.
+**Flow.**
+
+1. Visitor picks a date in the call sheet's own date field; the site fetches that day's
+   open slots from Cal.com (via the slots function above) and shows up to three named
+   buttons — Morning, Midday, Evening — disabling any not actually available that day.
+2. Visitor picks one of those slots. Nothing is booked yet — this only fills in the call
+   sheet's `shootDate`/`timeSlot`/slot-time fields.
+3. Submitting `POST`s the full payload to `/.netlify/functions/booking`.
+4. The function validates the payload; a validation failure returns a non-2xx error and
+   the form stays filled.
+5. The function attempts to create a pending booking against the exact slot chosen in
+   step 2.
+6. Cal.com succeeds: the function returns 200 and the visitor sees the confirmation page.
+7. Cal.com fails — including the picked slot having been taken by someone else in the
+   meantime: the function posts the submission to Netlify Forms, which emails Matt, and
+   still returns 200. The visitor's request reached him. Matt handles that one by hand.
+8. Both fail: return an error. The form keeps everything the visitor typed.
+
+The date/slot picker sits inside the call sheet step, directly under the shoot date
+field, with no separate heading above it — cut per client feedback. A visitor should not
+have to hunt for it.
 
 ---
 
@@ -582,12 +635,11 @@ more. Quiet, in `--muted`, not a competing call to action.
 
 | Service | Role |
 | --- | --- |
-| Netlify | Static hosting, plus the one form-handling function |
+| Netlify | Static hosting, the booking function, and fallback form notifications. Free tier, HTTPS, custom domain |
 | Cloudinary | Images — storage, transforms, and Matt's own photo library |
-| Resend | Booking emails; the API key stays server-side |
 | Cal.com | Availability; Matt owns the account |
 
-All four run on their free tier. **Matt's only ongoing cost is domain renewal** — say this
+All three run on their free tier. **Matt's only ongoing cost is domain renewal** — say this
 at handover.
 
 **Deliberately not used:** n8n, any database, any CMS, any auth. Each would add something
@@ -597,12 +649,12 @@ to keep alive, and none earns its place at this scope.
 the existing portfolio needs to stay live during the transition. Confirm with Matt before
 touching DNS.
 
-**Milestone split.** M1: Netlify hosting, Cloudinary as the image source, Resend handling
-submissions — site live and bookable. M2: Cal.com calendar, Cloudinary self-service
-(public tag listing so uploads appear without a deploy, plus written instructions),
-testimonials, results, portfolio link. Cloudinary spans both milestones — a CDN in M1,
-something Matt operates himself in M2. Build the image layer once, against Cloudinary,
-from the start.
+**Milestone split.** M1: Netlify hosting, Cloudinary as image source, and booking
+submissions reaching Matt via Netlify Forms, without the date picker. M2: Cal.com
+calendar, Cloudinary self-service (public tag listing so uploads appear without a
+deploy, plus written instructions), testimonials, results, portfolio link. Cloudinary
+spans both milestones — a CDN in M1, something Matt operates himself in M2. Build the
+image layer once, against Cloudinary, from the start.
 
 ---
 
@@ -616,6 +668,10 @@ responsive resizing and format conversion, which this site needs regardless.
   `plates`.
 - Ordering by filename prefix (`01-`, `02-`) so he controls sequence by renaming.
 - Alt text from Cloudinary context metadata where set, with a sensible fallback.
+
+Two additional tags outside the category folders: `signature` for Matt's signature mark,
+and `favicon` for the site icon. Reference both by tag, never by hardcoded URL, so he can
+replace either by uploading a new image with that tag.
 
 **Listing without a secret.** Cloudinary's Admin API needs an API secret and must never
 run in the browser. Use the public tag-based list endpoint instead:
@@ -655,6 +711,9 @@ affects order, how long changes take to appear.
 
 Sentence case throughout except call sheet labels and film markings. Active voice. Submit
 control and confirmation use the same verb.
+
+**Assets.** The favicon is sourced from the Cloudinary `favicon` tag rather than a file
+in the repo.
 
 ---
 
@@ -696,14 +755,21 @@ own folder. Each builds against placeholder data and must be independently viewa
 
 - **A — Filmstrip.** Sprocket edges as repeating SVG, vertical frame stacking, the
   overlapping fan arrangement with alternating angles, hover per §6 (plate signal emitted
-  upward via callback), tap, keyboard focus. No entrance animation.
+  upward via callback), tap, keyboard focus. No entrance animation. Sprocket holes must
+  align across both edges: the same vertical phase on left and right, mirrored rather
+  than offset. The current art has the right edge out of step. Drive both edges from one
+  pattern definition so they cannot drift.
 - **B — CategoryView.** Expand transition, rails with parallax on desktop and
   scroll-snap on mobile, film-edge rules, return control, and the light table: scrim,
   enlarged frame, arrow-key and Escape navigation, focus trap, focus returned to the
-  originating frame on close, scroll position preserved.
+  originating frame on close, scroll position preserved. Rails repeat to fill out to 10
+  images per row on desktop, 5 on mobile (unless more real photos already exist, in which
+  case no repeats), do not loop, and on mobile are the only horizontally scrollable
+  elements on the page.
 - **C — CallSheet.** All fields including per-category, blur validation, plain-language
-  errors, Cal.com embed, `POST` to the Netlify function, pending and failure states
-  preserving input.
+  errors, the date/slot picker (reads Cal.com availability via the slots function, books
+  nothing itself), `POST` to the Netlify function, pending and failure states preserving
+  input.
   Must work in two modes: category preset, and category chosen as the first field. Build
   it as a standalone view taking an optional category prop, not as a section glued to the
   bottom of the category view. Also owns routing for `/book` and `/book/:category`,
@@ -730,7 +796,7 @@ own folder. Each builds against placeholder data and must be independently viewa
 
 1. Keyboard from landing to confirmation. Visible focus in `--accent`.
 2. Reduced-motion path end to end.
-3. 375px, including the Cal.com embed.
+3. 375px, including the date/slot picker.
 4. Lighthouse on mobile with real images.
 5. Screenshot the landing, a category, and the confirmation. Fix what looks wrong, not
    what fails a check.
@@ -745,8 +811,9 @@ Build Phase 1 in the listed order. Nothing depends on parallelism.
 ## 15. Acceptance criteria
 
 - [ ] Four categories, each opening its own view and carrying into booking.
-- [ ] Form validates and `POST`s the §2 payload to the Netlify function, which emails
-      Matt via Resend.
+- [ ] Form validates and `POST`s the §2 payload to the Netlify function, which creates a
+      pending Cal.com booking, falling through to a Netlify Forms notification if that
+      fails.
 - [ ] Failure keeps entered data and offers retry.
 - [ ] `Book` in the nav opens the call sheet from any state, with shoot type as a
       required first field.
@@ -775,6 +842,13 @@ Build Phase 1 in the listed order. Nothing depends on parallelism.
 - [ ] No uppercase eyebrow labels, no middle-dot metadata, no arrows in button text.
 - [ ] Page has title, meta description, and Open Graph image.
 - [ ] Lighthouse performance above 85 on mobile with real photographs.
+- [ ] Sprocket holes align across both edges of every strip.
+- [ ] Hovering a strip raises it above its neighbours and restores the original stacking
+      order on leave.
+- [ ] The category view has no horizontal page scroll on mobile; only the rails scroll
+      sideways.
+- [ ] Rails terminate rather than looping.
+- [ ] Signature and favicon resolve from Cloudinary tags.
 
 ---
 
@@ -792,6 +866,7 @@ Build Phase 1 in the listed order. Nothing depends on parallelism.
 - Cal.com account, or agreement for Gavin to set one up.
 - Domain and current hosting details.
 - Agreement on where the site is deployed and whether DNS moves now or later.
+- Signature image and favicon uploaded to Cloudinary with those tags.
 
 ---
 
@@ -799,8 +874,6 @@ Build Phase 1 in the listed order. Nothing depends on parallelism.
 
 - Whether this replaces the current site address or lives at a new one.
 - Timeline, to be set backwards from the photo delivery date.
-- Whether the Cal.com embed is acceptable aesthetically, or a custom calendar is wanted
-  later as separate work.
 - Backend automation beyond the booking function and email is out of scope and priced
   separately.
 
@@ -817,10 +890,9 @@ checkpoint, since the site runs end to end well before every real input exists.
 - One real photo per category (frame, hero, and a distinct atmosphere plate), not the
   final 15–25 — enough to prove every component against real photography instead of
   placeholders.
-- Booking form posts to the Netlify function; Resend key configured, so submissions
-  really do reach Matt by email.
-- Cal.com embed present and functional against a stub/demo configuration; no production
-  account required yet.
+- Booking form posts to the Netlify function and reaches Matt via Netlify Forms, without
+  the date picker.
+- Cal.com calendar and the pending-booking path are M2 — not required for M1.
 - Supporting section (testimonials, results, portfolio link, contact) may ship empty or
   deferred — §10's "render nothing for empty sections" rule covers this by design.
 - Everything in the Phase 3 pass (keyboard, reduced-motion, 375px, Lighthouse) holds at

@@ -3,6 +3,12 @@
   command = "npm run build"
   publish = "dist"
 
+[functions]
+  # Relative to `base` above (same as `publish = "dist"` resolving to
+  # app/dist), so this resolves to app/netlify/functions on disk, where
+  # netlify/functions/booking.ts actually lives.
+  directory = "netlify/functions"
+
 [[redirects]]
   from = "/*"
   to = "/index.html"

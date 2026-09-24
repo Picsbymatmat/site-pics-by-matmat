@@ -158,7 +158,35 @@
   font-size: var(--text-sm);
 }
 
-.call-sheet__calendar-trigger {
+.call-sheet__slot-picker {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.call-sheet__date-input {
+  background: var(--bg);
+  border: 1px solid var(--rule);
+  color: var(--ink);
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--text-sm);
+  font-family: var(--font-display);
+  min-height: 44px;
+  min-width: 44px;
+}
+
+.call-sheet__date-input:hover,
+.call-sheet__date-input:focus-visible {
+  border-color: var(--accent);
+}
+
+.call-sheet__slot-row {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.call-sheet__slot-btn {
   background: var(--bg);
   border: 1px solid var(--rule);
   color: var(--ink);
@@ -167,12 +195,27 @@
   font-family: var(--font-display);
   cursor: pointer;
   min-height: 44px;
-  text-align: left;
+  min-width: 44px;
 }
 
-.call-sheet__calendar-trigger:hover,
-.call-sheet__calendar-trigger:focus-visible {
+.call-sheet__slot-btn:hover:not(:disabled),
+.call-sheet__slot-btn:focus-visible {
   border-color: var(--accent);
+}
+
+.call-sheet__slot-btn--active {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.call-sheet__slot-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.call-sheet__slots-status {
+  color: var(--muted);
+  font-size: var(--text-sm);
 }
 
 .call-sheet--success {

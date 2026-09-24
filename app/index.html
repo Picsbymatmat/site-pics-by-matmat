@@ -20,6 +20,37 @@
   </head>
   <body>
     <div id="root"></div>
+
+    <!--
+      Netlify Forms fallback (§2, §9, §11). Netlify only registers a form
+      for its build-time bot-notification pipeline if it finds matching
+      static HTML somewhere in the built output — a form only ever POSTed
+      to from JS or a serverless function is invisible to it. This markup
+      is never rendered/shown (display: none, outside #root, not mounted
+      by React) and never submitted from here; its only job is to give
+      Netlify's scanner a `booking-fallback` form with every field the
+      booking function's Netlify Forms fallback POST sends, so that POST
+      (from netlify/functions/booking.ts, once Cal.com fails) reaches
+      Matt's inbox instead of silently doing nothing.
+    -->
+    <form name="booking-fallback" data-netlify="true" netlify-honeypot="bot-field" hidden>
+      <input type="hidden" name="form-name" value="booking-fallback" />
+      <input type="text" name="bot-field" />
+      <input type="text" name="category" />
+      <input type="text" name="name" />
+      <input type="text" name="subject" />
+      <input type="email" name="email" />
+      <input type="text" name="phone" />
+      <input type="text" name="instagram" />
+      <input type="text" name="shootDate" />
+      <input type="text" name="timeSlot" />
+      <input type="text" name="turnaround" />
+      <input type="text" name="location" />
+      <textarea name="notes"></textarea>
+      <textarea name="categoryFields"></textarea>
+      <input type="text" name="submittedAt" />
+    </form>
+
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

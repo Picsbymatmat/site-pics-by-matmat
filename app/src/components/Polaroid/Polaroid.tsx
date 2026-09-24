@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import type { PolaroidProps } from "../../types";
+import { getSignature } from "../../lib/cloudinary";
 import "./Polaroid.css";
+
+const PLACEHOLDER_SIGNATURE_SRC = "/images/placeholder/polaroid/signature.png";
 
 // No token exists for the pause between the rise finishing and the develop
 // starting (only the rise and develop durations themselves are tokenized).
@@ -23,6 +26,20 @@ export default function Polaroid({ category, hero, reducedMotion }: PolaroidProp
   const [risen, setRisen] = useState(reducedMotion);
   const [developed, setDeveloped] = useState(reducedMotion);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
+  // Cloudinary `signature` tag (§12, §13) when configured/uploaded, else
+  // the local placeholder — same graceful-degradation pattern as every
+  // other Cloudinary-sourced asset in this codebase, never a broken image.
+  const [signatureSrc, setSignatureSrc] = useState(PLACEHOLDER_SIGNATURE_SRC);
+
+  useEffect(() => {
+    let cancelled = false;
+    getSignature().then((photo) => {
+      if (!cancelled && photo) setSignatureSrc(photo.src);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     timers.current.forEach(clearTimeout);
@@ -104,7 +121,7 @@ export default function Polaroid({ category, hero, reducedMotion }: PolaroidProp
           <div className="polaroid__margin-inner">
             <img
               className="polaroid__signature"
-              src="/images/placeholder/polaroid/signature.png"
+              src={signatureSrc}
               alt="Signature"
             />
           </div>

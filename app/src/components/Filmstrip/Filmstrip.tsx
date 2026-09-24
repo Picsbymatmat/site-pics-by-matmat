@@ -5,11 +5,31 @@ import "./Filmstrip.css";
 const HOVER_DEBOUNCE_MS = 60;
 
 // Sprocket holes rendered as a repeating SVG pattern along both edges, per
-// spec §3 ("sprocket holes running both edges"). Pure decoration: hidden
-// from the accessibility tree.
-const SPROCKET_PATTERN_ID = "filmstrip-sprocket";
+// spec §3 ("sprocket holes running both edges") and §14 Agent A's append:
+// "the same vertical phase on left and right, mirrored rather than
+// offset... Drive both edges from one pattern definition so they cannot
+// drift." Previously each SprocketEdge instance defined its own <pattern>
+// with an id keyed only by side (`${id}-left` / `${id}-right`) — content
+// was identical, but two independent definitions is exactly the drift risk
+// called out: nothing stops them from being edited out of step later. Now
+// there is exactly one <pattern>, defined once per Filmstrip instance
+// (keyed by category.key so multiple Filmstrips on one page — all four
+// landing strips — don't collide on id), and both edges' <rect>s reference
+// it by the same url(#...), so left and right are structurally incapable
+// of drifting apart.
+function SprocketPatternDef({ patternId }: { patternId: string }) {
+  return (
+    <svg width="0" height="0" aria-hidden="true" focusable="false" style={{ position: "absolute" }}>
+      <defs>
+        <pattern id={patternId} patternUnits="userSpaceOnUse" width="18" height="18">
+          <rect x="5" y="4" width="8" height="10" rx="2" fill="var(--rule)" />
+        </pattern>
+      </defs>
+    </svg>
+  );
+}
 
-function SprocketEdge({ side }: { side: "left" | "right" }) {
+function SprocketEdge({ side, patternId }: { side: "left" | "right"; patternId: string }) {
   return (
     <svg
       className={`filmstrip-sprockets filmstrip-sprockets--${side}`}
@@ -19,17 +39,7 @@ function SprocketEdge({ side }: { side: "left" | "right" }) {
       width="100%"
       height="100%"
     >
-      <defs>
-        <pattern
-          id={`${SPROCKET_PATTERN_ID}-${side}`}
-          patternUnits="userSpaceOnUse"
-          width="18"
-          height="18"
-        >
-          <rect x="5" y="4" width="8" height="10" rx="2" fill="var(--rule)" />
-        </pattern>
-      </defs>
-      <rect width="100%" height="100%" fill={`url(#${SPROCKET_PATTERN_ID}-${side})`} />
+      <rect width="100%" height="100%" fill={`url(#${patternId})`} />
     </svg>
   );
 }
@@ -95,6 +105,7 @@ export default function Filmstrip({ category, frames, onHoverStart, onOpen }: Fi
   // entry means that slot's tag has nothing uploaded yet, rendered as its
   // own placeholder block rather than borrowing another slot's photo.
   const shown = frames.slice(0, 4);
+  const patternId = `filmstrip-sprocket-${category.key}`;
 
   return (
     <div
@@ -109,8 +120,9 @@ export default function Filmstrip({ category, frames, onHoverStart, onOpen }: Fi
       onClick={handleActivate}
       onKeyDown={handleKeyDown}
     >
+      <SprocketPatternDef patternId={patternId} />
       <div className="filmstrip-strip">
-        <SprocketEdge side="left" />
+        <SprocketEdge side="left" patternId={patternId} />
         <div className="filmstrip-frames">
           {shown.map((frame, i) =>
             frame ? (
@@ -122,7 +134,7 @@ export default function Filmstrip({ category, frames, onHoverStart, onOpen }: Fi
             ),
           )}
         </div>
-        <SprocketEdge side="right" />
+        <SprocketEdge side="right" patternId={patternId} />
       </div>
       <div className="filmstrip-label mono">{category.label}</div>
     </div>

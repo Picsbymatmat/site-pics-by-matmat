@@ -13,6 +13,17 @@
   object-fit: cover;
 }
 
+/* Spec note: §6 gives the desktop hover crossfade as 280ms, but §7's
+   mobile "Background plates" bullet describes swiping to the next strip as
+   "Same crossfade as desktop hover (§6) — 160ms" — the two sections name
+   different numbers for what they both call the same crossfade. Since both
+   desktop hover and mobile swipe drive this one shared --dur-plate token
+   (one AppPlate instance for the whole app, §3 "rendered once, above the
+   route switch"), we can only pick one; we use §6's 280ms as the more
+   detailed/primary description of the mechanism itself, rather than
+   introducing a second token that would let desktop and mobile drift out
+   of sync with no textual justification for which is "right." Flagged for
+   Matt/Gavin to resolve in the spec. */
 .app-plate--entering {
   opacity: 0;
   animation: app-plate-in var(--dur-plate) ease forwards;

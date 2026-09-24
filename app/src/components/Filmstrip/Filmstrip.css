@@ -12,12 +12,33 @@
   border: 0;
   padding: 0;
   cursor: pointer;
+  /* position + a resting z-index give this element its own stacking
+     context so --active can raise it above its neighbours (below) and,
+     just as importantly, so removing that override on mouse-leave falls
+     straight back to the fan's natural DOM-order stacking — the "original
+     stacking order" §6 requires restoring, with nothing extra to track. */
+  position: relative;
+  z-index: 0;
   /* --strip-rotate is set by whoever composes the fan, on this element or
      an ancestor. Declaring a default here (rather than as a self-value)
      would shadow an inherited ancestor value, so the fallback lives in
-     var() instead. */
+     var() instead. Active state layers a scale on top of this same
+     rotation (see .filmstrip--active) rather than replacing it, so a
+     hovered strip keeps its off-vertical angle while it lifts. */
   transform: rotate(var(--strip-rotate, 0deg));
+  transition: transform var(--dur-strip-raise) ease;
   /* No entrance/mount animation per spec §6 — strips render in final state. */
+}
+
+/* Hovering/focusing a strip raises it above its fanned neighbours and
+   scales it up, §6 "Strip hover": "raised above its neighbours in the
+   stacking order, so the strip you are choosing is fully visible rather
+   than half-covered... The scale is smooth, 220ms, and the strip returns
+   when the cursor leaves." Reverses the earlier "no transform on hover"
+   rule — see §3's explicit note not to remove this. */
+.filmstrip--active {
+  transform: rotate(var(--strip-rotate, 0deg)) scale(1.1);
+  z-index: 2;
 }
 
 .filmstrip-strip {
@@ -33,6 +54,17 @@
 .filmstrip-sprockets {
   width: 10px;
   align-self: stretch;
+}
+
+/* Both edges share one pattern definition (see SprocketPatternDef in
+   Filmstrip.tsx), which by itself draws the hole toward the outer-facing
+   side of each 10px margin column — correct for the left edge, but it puts
+   the right edge's holes at the strip's outer border instead of along the
+   frames. Mirroring just the right SVG keeps it driven by that same single
+   definition while moving its visible hole to the inner (frame-facing)
+   side, matching the left edge. */
+.filmstrip-sprockets--right {
+  transform: scaleX(-1);
 }
 
 .filmstrip-frames {

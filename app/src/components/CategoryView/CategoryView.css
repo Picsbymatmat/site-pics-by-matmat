@@ -5,6 +5,14 @@
   min-height: 100vh;
   color: var(--ink);
   padding-bottom: var(--space-24);
+  /* §7/§15: "No horizontal page scroll on the category view... nothing
+     about the page itself should move sideways under a thumb." Already
+     true globally via body's overflow-x: hidden (global.css), but declared
+     again here at the page-container level per §7's own framing, and so
+     it holds even if that global rule ever narrows in scope. The rail
+     tracks (.category-rail-track) are the only intended horizontally
+     scrollable elements — this does not clip them, only the page. */
+  overflow-x: hidden;
 }
 
 .category-view-bar {

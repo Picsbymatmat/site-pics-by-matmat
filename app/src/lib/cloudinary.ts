@@ -131,3 +131,33 @@ export async function getAllCategoryPhotos(): Promise<Record<CategoryKey, Catego
 export function isPlaceholder(photo: PhotoAsset | null): photo is null {
   return photo === null;
 }
+
+// ---- Single-image tags outside the category folders (§12, §13) ----
+//
+// `signature` (Matt's signature mark, Polaroid margin) and `favicon` (site
+// icon) are each their own tag, not category-scoped, so Matt can replace
+// either by uploading a new image with that tag — never a hardcoded URL.
+// One image per tag: take the first match, same convention as film1/2/3's
+// single-photo slots above. Single-flight cached (one request per tag for
+// the life of the page) since there's exactly one consumer of each.
+
+let signaturePromise: Promise<PhotoAsset | null> | null = null;
+let faviconPromise: Promise<PhotoAsset | null> | null = null;
+
+/** Matt's signature mark, or null if unconfigured/nothing tagged yet —
+ *  callers fall back to the local placeholder PNG in that case. */
+export function getSignature(): Promise<PhotoAsset | null> {
+  if (!signaturePromise) {
+    signaturePromise = fetchTag("signature").then((photos) => photos[0] ?? null);
+  }
+  return signaturePromise;
+}
+
+/** Site favicon image, or null if unconfigured/nothing tagged yet —
+ *  callers keep the static /favicon.svg default in that case. */
+export function getFavicon(): Promise<PhotoAsset | null> {
+  if (!faviconPromise) {
+    faviconPromise = fetchTag("favicon").then((photos) => photos[0] ?? null);
+  }
+  return faviconPromise;
+}

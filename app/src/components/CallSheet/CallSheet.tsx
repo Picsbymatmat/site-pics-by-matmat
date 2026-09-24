@@ -2,7 +2,8 @@ import { useCallback, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import content from "../../data/content.json";
 import { CATEGORIES, CATEGORY_BY_SLUG } from "../../data/categories";
-import CalendarEmbed from "./CalendarEmbed";
+import SlotPicker from "./SlotPicker";
+import type { SlotPickerSelection } from "./SlotPicker";
 import type {
   BookingPayload,
   BrandFields,
@@ -11,6 +12,7 @@ import type {
   EventFields,
   PortraitFields,
   ProductFields,
+  TimeSlot,
   Turnaround,
 } from "../../types";
 import "./CallSheet.css";
@@ -33,6 +35,11 @@ interface SharedFieldValues {
   subject: string;
   location: string;
   shootDate: string;
+  timeSlot: TimeSlot | null;
+  /** Exact ISO start time of the picked slot, straight from slots.ts —
+   *  what booking.ts actually books against. Empty until a slot is
+   *  picked, alongside shootDate/timeSlot. */
+  slotStart: string;
   turnaround: Turnaround;
   notes: string;
 }
@@ -45,6 +52,8 @@ const EMPTY_SHARED: SharedFieldValues = {
   subject: "",
   location: "",
   shootDate: "",
+  timeSlot: null,
+  slotStart: "",
   turnaround: "standard",
   notes: "",
 };
@@ -85,11 +94,13 @@ type SubmitStatus = "idle" | "pending" | "failure";
 // payload is meaningless without one. Flip back to true before launch.
 const BLOCK_SUBMIT_ON_VALIDATION_ERRORS = false;
 
-// Also paused for testing: no real webhook is wired up yet, so treat a
-// missing VITE_BOOKING_WEBHOOK_URL as a simulated success (payload logged
-// to the console) instead of failing every submit attempt. Flip to false
-// once a real webhook URL is set for launch.
-const SIMULATE_SUCCESS_WITHOUT_WEBHOOK = true;
+// Fixed path, not an env-configured URL — §2: "No simulate-success
+// fallback for the function itself... there is no 'unconfigured' state to
+// detect and fall back from." Testing the real path (Cal.com + the
+// Netlify Forms fallback) requires `netlify dev`, not plain `vite dev`,
+// per §2's note — under plain `vite dev` this 404s and the form correctly
+// shows the failure state rather than faking success.
+const BOOKING_ENDPOINT = "/.netlify/functions/booking";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -137,11 +148,6 @@ export default function CallSheet({ presetCategory, onCategoryChange, onSuccess 
   const [touched, setTouched] = useState<Partial<Record<string, boolean>>>({});
   const [status, setStatus] = useState<SubmitStatus>("idle");
   const [success, setSuccess] = useState(false);
-  // Label for the button once a real Cal.com booking picks a date — kept
-  // separate from shared.shootDate (a plain "yyyy-mm-dd") since re-deriving
-  // a friendly weekday/month string from that date-only value risks an
-  // off-by-one day around midnight in timezones behind UTC.
-  const [calBookingLabel, setCalBookingLabel] = useState<string | null>(null);
 
   // ---- Category switching: updates fields + URL in place, never a real nav ----
   const handleCategorySelect = useCallback(
@@ -168,13 +174,15 @@ export default function CallSheet({ presetCategory, onCategoryChange, onSuccess 
     setTouched((prev) => ({ ...prev, [`cat.${field}`]: true }));
   }, []);
 
-  const handleCalBooked = useCallback((startTimeIso: string) => {
-    const d = new Date(startTimeIso);
-    const isoDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-    setSharedField("shootDate", isoDate);
+  const handleSlotSelect = useCallback((selection: SlotPickerSelection) => {
+    setShared((prev) => ({
+      ...prev,
+      shootDate: selection.date,
+      timeSlot: selection.timeSlot,
+      slotStart: selection.start,
+    }));
     setTouched((prev) => ({ ...prev, shootDate: true }));
-    setCalBookingLabel(d.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" }));
-  }, [setSharedField]);
+  }, []);
 
   const sharedErrors = useMemo(() => {
     const errors: Partial<Record<SharedFieldName, string>> = {};
@@ -208,12 +216,12 @@ export default function CallSheet({ presetCategory, onCategoryChange, onSuccess 
     }));
 
     // Hard gate, independent of BLOCK_SUBMIT_ON_VALIDATION_ERRORS above:
-    // shootDate now only ever gets set via a completed Cal.com booking
-    // (see handleCalBooked/CalendarEmbed) rather than free-typed text, so
-    // there's no "arbitrary placeholder date" case left to allow through
-    // for testing — an unpicked date means no real availability was
-    // checked at all.
-    if (!shared.shootDate) return;
+    // shootDate/slotStart only ever get set together via SlotPicker
+    // selecting a real, currently-available Cal.com slot, rather than
+    // free-typed text, so there's no "arbitrary placeholder date" case
+    // left to allow through for testing — an unpicked slot means no real
+    // availability was checked at all.
+    if (!shared.shootDate || !shared.slotStart) return;
 
     if (BLOCK_SUBMIT_ON_VALIDATION_ERRORS && (!category || !isValid)) return;
 
@@ -221,8 +229,6 @@ export default function CallSheet({ presetCategory, onCategoryChange, onSuccess 
     // above): even with no category chosen, fall back to the first one so a
     // fully blank form can still submit and produce a valid payload shape.
     const effectiveCategory = category ?? CATEGORIES[0].key;
-
-    const webhookUrl = import.meta.env.VITE_BOOKING_WEBHOOK_URL as string | undefined;
 
     const contactValue = shared.contactValue.trim() || null;
     const payload: BookingPayload = {
@@ -233,6 +239,8 @@ export default function CallSheet({ presetCategory, onCategoryChange, onSuccess 
       phone: shared.contactMethod === "phone" ? contactValue : null,
       instagram: shared.contactMethod === "instagram" ? contactValue : null,
       shootDate: shared.shootDate,
+      timeSlot: shared.timeSlot,
+      slotStart: shared.slotStart || null,
       turnaround: shared.turnaround,
       location: shared.location.trim(),
       notes: shared.notes.trim() ? shared.notes.trim() : null,
@@ -243,30 +251,20 @@ export default function CallSheet({ presetCategory, onCategoryChange, onSuccess 
 
     setStatus("pending");
     try {
-      if (!webhookUrl) {
-        // Paused for testing (see BLOCK_SUBMIT_ON_VALIDATION_ERRORS above):
-        // no webhook is hooked up yet, so rather than hard-failing every
-        // submit attempt — which made it impossible to reach the
-        // success/Polaroid flow at all — log the payload and proceed as if
-        // it sent. Flip SIMULATE_SUCCESS_WITHOUT_WEBHOOK to false once a
-        // real webhook URL is set for launch.
-        if (SIMULATE_SUCCESS_WITHOUT_WEBHOOK) {
-          console.info("[booking] no VITE_BOOKING_WEBHOOK_URL set — payload:", payload);
-        } else {
-          throw new Error("Missing VITE_BOOKING_WEBHOOK_URL");
-        }
-      } else {
-        const res = await fetch(webhookUrl, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        });
-        if (!res.ok) throw new Error(`Webhook responded ${res.status}`);
-      }
+      const res = await fetch(BOOKING_ENDPOINT, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) throw new Error(`Booking function responded ${res.status}`);
       setStatus("idle");
       setSuccess(true);
       onSuccess(payload);
     } catch {
+      // Non-2xx or network error from the function itself is the only
+      // failure case left (§2) — the function's own Cal.com→Netlify Forms
+      // fallback already absorbs a failed Cal.com call server-side, so
+      // reaching here means both of those failed too. Form stays filled.
       setStatus("failure");
     }
   }
@@ -434,7 +432,15 @@ export default function CallSheet({ presetCategory, onCategoryChange, onSuccess 
             SHOOT DATE
           </label>
           <div className="call-sheet__control">
-            <CalendarEmbed onBooked={handleCalBooked} selectedLabel={calBookingLabel} />
+            <SlotPicker
+              category={category}
+              selected={
+                shared.shootDate && shared.timeSlot && shared.slotStart
+                  ? { date: shared.shootDate, timeSlot: shared.timeSlot, start: shared.slotStart }
+                  : null
+              }
+              onSelect={handleSlotSelect}
+            />
             {touched.shootDate && sharedErrors.shootDate ? (
               <p className="call-sheet__error" id="cs-shoot-date-error" role="alert">
                 {sharedErrors.shootDate}
@@ -484,7 +490,7 @@ export default function CallSheet({ presetCategory, onCategoryChange, onSuccess 
           <button
             type="submit"
             className="call-sheet__submit"
-            disabled={status === "pending" || !shared.shootDate}
+            disabled={status === "pending" || !shared.shootDate || !shared.slotStart}
           >
             {status === "pending" ? content.copy["submit.pending"] : content.copy["submit.default"]}
           </button>

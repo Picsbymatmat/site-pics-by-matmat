@@ -40,9 +40,10 @@ lead.
    **Portraits**.
 2. Selecting a category shows that category's work and carries the choice into booking.
 3. A booking form collects the fields in §8 and `POST`s JSON to a Netlify function, which
-   creates a pending Cal.com booking. If that fails, the submission falls through to a
-   Netlify Forms post so Matt is still notified. No third-party email service. Endpoint
-   and keys from env, never hardcoded.
+   creates a pending Cal.com booking and always also posts the full submission to Netlify
+   Forms so Matt is notified with every field the visitor typed — Cal.com's own booking
+   email only covers what Cal.com itself asks for, not the rest of the call sheet. No
+   third-party email service. Endpoint and keys from env, never hardcoded.
 4. A calendar shows availability and lets a visitor request a date.
 5. On success the form is replaced by a confirmation. On failure it stays filled and
    shows a recoverable error.
@@ -81,11 +82,12 @@ lead.
 }
 ```
 
-The function validates the payload and creates a pending booking against the requested
-date and slot in Cal.com, and returns 200. If the Cal.com request fails, the function
-falls through to posting the submission to Netlify Forms so Matt is still notified by
-email, and still returns 200. Non-2xx or network error from the function itself is a
-failure. Do not clear the form on failure.
+The function validates the payload, then — independently, both on every submission —
+attempts to create a pending booking against the requested date and slot in Cal.com, and
+posts the full submission to Netlify Forms so Matt is notified by email with every field
+the visitor typed (Cal.com's own booking email only covers what Cal.com itself asks for).
+Either succeeding returns 200. Non-2xx or network error from the function itself, meaning
+both attempts failed, is the only failure case. Do not clear the form on failure.
 
 All keys live in Netlify's environment variables and never reach the browser. No n8n, no
 queue, no database, and no email vendor: Netlify handles hosting, the function, and the
@@ -111,8 +113,8 @@ before launch.
 No simulate-success fallback for the function itself — the endpoint is a fixed path, not
 an optional env-configured URL, so there is no "unconfigured" state to detect and fall
 back from. Testing the submit flow locally, including a real Cal.com booking and the
-Netlify Forms fallback, requires running Netlify's local dev CLI (`netlify dev`) rather
-than plain `vite dev`, which emulates the function faithfully. Deliberately no fallback
+Netlify Forms notification, requires running Netlify's local dev CLI (`netlify dev`)
+rather than plain `vite dev`, which emulates the function faithfully. Deliberately no fallback
 that fakes success when the function isn't reachable — that kind of fallback is exactly
 the sort of thing that can mask a real failure close to launch.
 
@@ -594,13 +596,18 @@ the page, not a Cal.com iframe:
 3. Submitting `POST`s the full payload to `/.netlify/functions/booking`.
 4. The function validates the payload; a validation failure returns a non-2xx error and
    the form stays filled.
-5. The function attempts to create a pending booking against the exact slot chosen in
-   step 2.
-6. Cal.com succeeds: the function returns 200 and the visitor sees the confirmation page.
-7. Cal.com fails — including the picked slot having been taken by someone else in the
-   meantime: the function posts the submission to Netlify Forms, which emails Matt, and
-   still returns 200. The visitor's request reached him. Matt handles that one by hand.
-8. Both fail: return an error. The form keeps everything the visitor typed.
+5. The function does two things independently, both on every submission: attempts to
+   create a pending booking against the exact slot chosen in step 2, and posts the full
+   submission to Netlify Forms. These are not a primary path and a fallback — Cal.com's
+   own booking email only covers what Cal.com itself asks for (name/email/time), not the
+   rest of the call sheet (subject, location, phone/instagram, notes, category-specific
+   fields), so Netlify Forms is the one channel that reliably carries all of it to Matt
+   regardless of whether Cal.com succeeds.
+6. Either succeeding is enough: the function returns 200 and the visitor sees the
+   confirmation page. If Cal.com failed — including the picked slot having been taken by
+   someone else in the meantime — Matt still gets the full submission by email and
+   handles that one by hand.
+7. Both fail: return an error. The form keeps everything the visitor typed.
 
 The date/slot picker sits inside the call sheet step, directly under the shoot date
 field, with no separate heading above it — cut per client feedback. A visitor should not
@@ -635,7 +642,7 @@ more. Quiet, in `--muted`, not a competing call to action.
 
 | Service | Role |
 | --- | --- |
-| Netlify | Static hosting, the booking function, and fallback form notifications. Free tier, HTTPS, custom domain |
+| Netlify | Static hosting, the booking function, and form notifications. Free tier, HTTPS, custom domain |
 | Cloudinary | Images — storage, transforms, and Matt's own photo library |
 | Cal.com | Availability; Matt owns the account |
 

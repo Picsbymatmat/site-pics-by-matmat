@@ -7,16 +7,27 @@
 // (see tsconfig.app.json's `include`) — Netlify bundles/type-strips this
 // file itself at deploy time, same as any other function.
 //
-// Flow (§9): validate the payload; try to create a *pending* Cal.com
-// booking (pending is a property of the Cal.com event type itself —
-// "requires confirmation", set in Matt's dashboard, not something this
-// function requests) against the exact slot the visitor picked via
-// slots.ts (this is the ONLY place a real Cal.com booking gets created —
-// picking a slot in the call sheet never books anything by itself); if
-// that fails for any reason, fall through to a Netlify Forms submission so
-// Matt still gets notified by email; return 200 if either succeeds,
-// non-2xx only if both fail. All secrets live only in Netlify's env vars
-// (never VITE_-prefixed, never sent to the browser).
+// Flow (§9): validate the payload, then do two independent things:
+//   1. Try to create a *pending* Cal.com booking (pending is a property of
+//      the Cal.com event type itself — "requires confirmation", set in
+//      Matt's dashboard, not something this function requests) against the
+//      exact slot the visitor picked via slots.ts. This is the ONLY place
+//      a real Cal.com booking gets created — picking a slot in the call
+//      sheet never books anything by itself.
+//   2. Always — not only when (1) fails — also POST the full submission to
+//      Netlify Forms. Cal.com's own booking-created emails only cover what
+//      Cal.com itself asks for (name/email/time); everything else the call
+//      sheet collects (subject, location, phone/instagram, notes, the
+//      category-specific fields) was going into the booking's `metadata`,
+//      which Cal.com stores but does not surface in its notification
+//      emails — so treating Netlify Forms as a fallback-only path meant
+//      that whenever Cal.com succeeded, all of that extra detail silently
+//      never reached anyone. Netlify Forms is now the one channel that
+//      always carries the full submission, regardless of whether Cal.com
+//      succeeds.
+// Returns 200 if either succeeds, non-2xx only if both fail. All secrets
+// live only in Netlify's env vars (never VITE_-prefixed, never sent to the
+// browser).
 
 import { CALCOM_API_KEY, CALCOM_EVENT_TYPE_IDS, CATEGORY_KEYS, TIME_SLOTS, json } from "./lib/calcom";
 import type { CategoryKey, TimeSlot } from "./lib/calcom";
@@ -86,8 +97,8 @@ function isValidPayload(body: unknown): body is BookingPayload {
  *  `cal-api-version: 2026-02-25` per current docs) against the visitor's
  *  exact chosen slot. Returns false — never throws — on any missing
  *  config, missing slot, non-2xx response, or network error, so the
- *  caller can fall through to Netlify Forms without a try/catch of its
- *  own at the call site. */
+ *  caller can run this alongside postToNetlifyForms without a try/catch of
+ *  its own at the call site. */
 async function createCalBooking(payload: BookingPayload): Promise<boolean> {
   if (!CALCOM_API_KEY || !payload.slotStart) return false;
   const eventTypeId = CALCOM_EVENT_TYPE_IDS[payload.category];
@@ -132,12 +143,12 @@ async function createCalBooking(payload: BookingPayload): Promise<boolean> {
   }
 }
 
-/** Falls through to Netlify Forms so Matt is still emailed when Cal.com
- *  can't take the booking (§9 step 6) — e.g. the visitor's chosen slot got
- *  taken by someone else between loading it and submitting. Netlify only
- *  wires up form notifications for forms it found as static markup at
- *  build time — see the hidden `booking-fallback` form in index.html — so
- *  this POST must match that form's name and field set exactly. */
+/** Posts the full submission to Netlify Forms so Matt is always emailed
+ *  the complete call-sheet details, whether or not Cal.com could take the
+ *  booking (see the flow note up top). Netlify only wires up form
+ *  notifications for forms it found as static markup at build time — see
+ *  the hidden `booking-fallback` form in index.html — so this POST must
+ *  match that form's name and field set exactly. */
 async function postToNetlifyForms(payload: BookingPayload, siteUrl: string): Promise<boolean> {
   try {
     const params = new URLSearchParams();
@@ -183,19 +194,19 @@ export default async (req: Request): Promise<Response> => {
     return json({ error: "Invalid booking payload" }, 400);
   }
 
-  const calOk = await createCalBooking(body);
-  if (calOk) {
-    return json({ ok: true, via: "calcom" }, 200);
-  }
-
   // Netlify sets URL to the site's primary production URL; DEPLOY_URL is
   // the deploy-specific fallback (branch/preview deploys, local `netlify
   // dev`). req.url's origin is a last-resort fallback so this never throws
-  // for lack of a base to POST the fallback form to.
+  // for lack of a base to POST the Netlify Forms submission to.
   const siteUrl = process.env.URL || process.env.DEPLOY_URL || new URL(req.url).origin;
-  const formsOk = await postToNetlifyForms(body, siteUrl);
-  if (formsOk) {
-    return json({ ok: true, via: "netlify-forms" }, 200);
+
+  // Both run unconditionally and independently (see the flow note up top)
+  // — Cal.com creates/holds the actual slot, Netlify Forms is what
+  // reliably carries every field the visitor typed to Matt's inbox.
+  const [calOk, formsOk] = await Promise.all([createCalBooking(body), postToNetlifyForms(body, siteUrl)]);
+
+  if (calOk || formsOk) {
+    return json({ ok: true, calBooked: calOk, notified: formsOk }, 200);
   }
 
   return json({ error: "Booking could not be delivered" }, 502);

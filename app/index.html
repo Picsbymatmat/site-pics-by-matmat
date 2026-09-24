@@ -22,32 +22,62 @@
     <div id="root"></div>
 
     <!--
-      Netlify Forms fallback (§2, §9, §11). Netlify only registers a form
-      for its build-time bot-notification pipeline if it finds matching
-      static HTML somewhere in the built output — a form only ever POSTed
-      to from JS or a serverless function is invisible to it. This markup
-      is never rendered/shown (display: none, outside #root, not mounted
-      by React) and never submitted from here; its only job is to give
-      Netlify's scanner a `booking-fallback` form with every field the
-      booking function's Netlify Forms fallback POST sends, so that POST
-      (from netlify/functions/booking.ts, once Cal.com fails) reaches
-      Matt's inbox instead of silently doing nothing.
+      Netlify Forms notification (§2, §9, §11). Netlify only registers a
+      form for its build-time bot-notification pipeline if it finds
+      matching static HTML somewhere in the built output — a form only
+      ever POSTed to from JS or a serverless function is invisible to it.
+      This markup is never rendered/shown (display: none, outside #root,
+      not mounted by React) and never submitted from here; its only job is
+      to give Netlify's scanner a `booking-fallback` form with every field
+      the booking function's Netlify Forms POST sends (netlify/functions/
+      booking.ts), on every submission, not only when Cal.com fails — see
+      that file's own comment for why.
+
+      Field choices that shape the notification email, since Netlify's
+      built-in email notification has no template/formatting options of
+      its own beyond the fields it's given:
+      - `subject` is Netlify's own reserved field name — whatever value is
+        submitted under it becomes the email's subject line (Netlify docs,
+        Forms > Submission notifications). booking.ts sets it dynamically
+        per submission (e.g. "New booking — Brand & Lifestyle — Jane
+        Doe"), which is why the call sheet's own "who/what the shoot is
+        of" field is sent here as `shootSubject` instead — reusing `subject`
+        for that would silently overwrite the email subject with whatever
+        the visitor typed.
+      - `email` sets the Reply-To header (Netlify docs), so Matt can hit
+        reply and it goes straight to the client, not Netlify.
+      - Every category's fields are listed individually (business,
+        productCount, usage, …) rather than one JSON blob, so the email
+        reads as labeled fields — Netlify's static-detection schema is
+        fixed at build time, so this form declares the union of all four
+        categories' fields; a submission only fills in the ones for its
+        own category; empty inputs come across as an empty value.
+      - Field order here drives the order Netlify lists them in the email.
     -->
     <form name="booking-fallback" data-netlify="true" netlify-honeypot="bot-field" hidden>
       <input type="hidden" name="form-name" value="booking-fallback" />
       <input type="text" name="bot-field" />
+      <input type="text" name="subject" />
       <input type="text" name="category" />
       <input type="text" name="name" />
-      <input type="text" name="subject" />
       <input type="email" name="email" />
       <input type="text" name="phone" />
       <input type="text" name="instagram" />
+      <input type="text" name="shootSubject" />
+      <input type="text" name="location" />
       <input type="text" name="shootDate" />
       <input type="text" name="timeSlot" />
       <input type="text" name="turnaround" />
-      <input type="text" name="location" />
+      <input type="text" name="business" />
+      <input type="text" name="productCount" />
+      <input type="text" name="usage" />
+      <input type="text" name="deliverables" />
+      <input type="text" name="shootLength" />
+      <input type="text" name="eventType" />
+      <input type="text" name="duration" />
+      <input type="text" name="guestCount" />
+      <input type="text" name="occasion" />
       <textarea name="notes"></textarea>
-      <textarea name="categoryFields"></textarea>
       <input type="text" name="submittedAt" />
     </form>
 

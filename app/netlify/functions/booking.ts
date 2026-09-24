@@ -58,6 +58,42 @@ interface BookingPayload {
 
 const TURNAROUNDS = ["standard", "rush"] as const;
 
+// Display-only formatting for the Netlify Forms notification email (see
+// postToNetlifyForms) — Netlify's built-in email notification has no
+// template of its own, so readability comes entirely from what's actually
+// submitted under each field name.
+const CATEGORY_LABELS: Record<CategoryKey, string> = {
+  product: "Professional & Product",
+  brand: "Brand & Lifestyle",
+  event: "Events",
+  portrait: "Portraits",
+};
+
+const TIME_SLOT_LABELS: Record<TimeSlot, string> = { morning: "Morning", midday: "Midday", evening: "Evening" };
+
+const TURNAROUND_LABELS: Record<(typeof TURNAROUNDS)[number], string> = {
+  standard: "Standard (2–3 weeks)",
+  rush: "Rush (sooner — rush fee)",
+};
+
+function formatShootDate(shootDate: string | null): string {
+  if (!shootDate) return "";
+  const d = new Date(`${shootDate}T00:00:00Z`);
+  if (Number.isNaN(d.getTime())) return shootDate;
+  return new Intl.DateTimeFormat("en-US", {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+    timeZone: "UTC",
+  }).format(d);
+}
+
+function fieldString(fields: Record<string, unknown>, key: string): string {
+  const v = fields[key];
+  return v === null || v === undefined ? "" : String(v);
+}
+
 function isNonEmptyString(v: unknown): v is string {
   return typeof v === "string" && v.trim().length > 0;
 }
@@ -150,23 +186,38 @@ async function createCalBooking(payload: BookingPayload): Promise<boolean> {
  *  booking (see the flow note up top). Netlify only wires up form
  *  notifications for forms it found as static markup at build time — see
  *  the hidden `booking-fallback` form in index.html — so this POST must
- *  match that form's name and field set exactly. */
+ *  match that form's name and field set exactly, including the
+ *  category-specific fields flattened out individually rather than sent
+ *  as one JSON blob (see that file's own comment on why). */
 async function postToNetlifyForms(payload: BookingPayload, siteUrl: string): Promise<boolean> {
   try {
+    const categoryLabel = CATEGORY_LABELS[payload.category];
     const params = new URLSearchParams();
     params.set("form-name", "booking-fallback");
-    params.set("category", payload.category);
+    // Netlify's reserved `subject` field becomes the notification email's
+    // subject line (see index.html's comment) — distinct from the call
+    // sheet's own "subject" question, sent below as `shootSubject`.
+    params.set("subject", `New booking — ${categoryLabel} — ${payload.name}`);
+    params.set("category", categoryLabel);
     params.set("name", payload.name);
-    params.set("subject", payload.subject);
     params.set("email", payload.email);
     params.set("phone", payload.phone ?? "");
     params.set("instagram", payload.instagram ?? "");
-    params.set("shootDate", payload.shootDate ?? "");
-    params.set("timeSlot", payload.timeSlot ?? "");
-    params.set("turnaround", payload.turnaround);
+    params.set("shootSubject", payload.subject);
     params.set("location", payload.location);
+    params.set("shootDate", formatShootDate(payload.shootDate));
+    params.set("timeSlot", payload.timeSlot ? TIME_SLOT_LABELS[payload.timeSlot] : "");
+    params.set("turnaround", TURNAROUND_LABELS[payload.turnaround]);
+    params.set("business", fieldString(payload.categoryFields, "business"));
+    params.set("productCount", fieldString(payload.categoryFields, "productCount"));
+    params.set("usage", fieldString(payload.categoryFields, "usage"));
+    params.set("deliverables", fieldString(payload.categoryFields, "deliverables"));
+    params.set("shootLength", fieldString(payload.categoryFields, "shootLength"));
+    params.set("eventType", fieldString(payload.categoryFields, "eventType"));
+    params.set("duration", fieldString(payload.categoryFields, "duration"));
+    params.set("guestCount", fieldString(payload.categoryFields, "guestCount"));
+    params.set("occasion", fieldString(payload.categoryFields, "occasion"));
     params.set("notes", payload.notes ?? "");
-    params.set("categoryFields", JSON.stringify(payload.categoryFields));
     params.set("submittedAt", payload.submittedAt);
 
     const res = await fetch(siteUrl.replace(/\/+$/, "") + "/", {

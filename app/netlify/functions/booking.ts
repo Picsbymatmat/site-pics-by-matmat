@@ -75,7 +75,9 @@ function isValidPayload(body: unknown): body is BookingPayload {
 
   if (!CATEGORY_KEYS.includes(b.category as CategoryKey)) return false;
   if (!isNonEmptyString(b.name)) return false;
-  if (!isNonEmptyString(b.subject)) return false;
+  // subject only renders/is required client-side for Portraits (§8) — the
+  // other three categories submit it as "", which is valid here.
+  if (typeof b.subject !== "string") return false;
   if (!isNonEmptyString(b.email)) return false;
   if (!isNonEmptyString(b.location)) return false;
   if (!TURNAROUNDS.includes(b.turnaround as (typeof TURNAROUNDS)[number])) return false;

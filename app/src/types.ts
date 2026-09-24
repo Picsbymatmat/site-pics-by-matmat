@@ -60,7 +60,6 @@ export interface EventFields {
 
 export interface PortraitFields {
   occasion: string;
-  people: string;
 }
 
 export type CategoryFieldsByKey = {

@@ -95,7 +95,9 @@ fallback notification. Automation beyond this is a separate engagement.
 
 `name` is the person booking; `subject` is who or what the shoot is actually of (the
 earlier draft conflated these into one field labelled SUBJECT — they are now separate
-questions). Exactly one of `phone` or `instagram` is required; the other is `null`.
+questions). `subject` only renders and is only required for Portraits (§8); it submits as
+`""` for the other three categories, which already ask this via their own `business`/
+`eventType` field. Exactly one of `phone` or `instagram` is required; the other is `null`.
 `location` is required (see §8 — it changed from optional). `preferredDate`/`altDate` from
 the earlier draft are gone, replaced by `shootDate` (from the date/slot picker) plus
 `timeSlot`. `slotStart` is the exact ISO start time Cal.com's own availability API
@@ -494,7 +496,7 @@ Shared fields, all categories, in order:
 | EMAIL | email | yes |
 | SHOOT TYPE | category | yes |
 | *(category-specific fields, see below)* | categoryFields | varies |
-| SUBJECT | subject | yes |
+| SUBJECT (Portraits only — see below) | subject | yes for Portraits |
 | LOCATION | location | yes |
 | SHOOT DATE | shootDate + timeSlot (calendar widget, §9) | yes |
 | DELIVERY DATE | turnaround (two-option select) | yes |
@@ -504,8 +506,12 @@ Shared fields, all categories, in order:
 contract note.)*
 
 **Name vs. subject.** `name` is the person booking; `subject` is who or what the shoot is
-actually of (e.g. a business name, a couple, an event). These are two separate questions,
-not one field doing double duty.
+actually of (e.g. a couple). These are two separate questions, not one field doing double
+duty — but `subject` now only renders (and is only required) for Portraits; the other
+three categories already ask for this via their own `business`/`eventType` field, so a
+separate SUBJECT box there was asking twice. It stays a top-level payload field, not a
+`categoryFields` entry, since it's conceptually the same question across categories, just
+redundant to show outside Portraits.
 
 **Phone or Instagram, not both required.** A single question with a method toggle
 (Phone / Instagram) and one text input, placeholder text reading "how should I reach
@@ -540,8 +546,9 @@ Category-specific, into `categoryFields`, rendered directly beneath the shoot ty
 - **Brand & Lifestyle** — `business`, `deliverables` (select: social content, campaign,
   headshots, other), `shootLength` (select: 1 hour, 2 hours, half day)
 - **Events** — `eventType`, `duration`, `guestCount`
-- **Portraits** — `occasion` (text, e.g. graduation, headshots, couples), `people`
-  (number)
+- **Portraits** — `occasion` (text, e.g. graduation, headshots, couples). SUBJECT also
+  renders here (it's a shared/top-level field, not a `categoryFields` entry — see above),
+  directly above it.
 
 Validate on blur. Errors under the field, in plain language saying how to fix it: "Add a
 phone number so Matt can text you." Errors do not apologise.

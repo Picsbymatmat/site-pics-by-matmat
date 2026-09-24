@@ -72,16 +72,19 @@ const EMPTY_CATEGORY_FIELDS: CategoryFieldState = {
   product: { business: "", productCount: "", usage: "ecommerce listings" },
   brand: { business: "", deliverables: "social content", shootLength: "1 hour" },
   event: { eventType: "", duration: "", guestCount: "" },
-  portrait: { occasion: "", people: "" },
+  portrait: { occasion: "" },
 };
 
 type SharedFieldName = keyof SharedFieldValues;
 
+// "subject" is deliberately not in here — it's shared payload shape, but
+// only rendered/required for Portraits (§8: the other three categories
+// already ask this via their own business/eventType field). Its own
+// required-ness is gated separately, at the point it's rendered, below.
 const SHARED_REQUIRED: SharedFieldName[] = [
   "name",
   "contactValue",
   "email",
-  "subject",
   "location",
   "shootDate",
 ];
@@ -197,8 +200,9 @@ export default function CallSheet({ presetCategory, onCategoryChange, onSuccess 
 
   const isValid = useMemo(() => {
     if (categoryError) return false;
+    if (category === "portrait" && sharedFieldError("subject", shared)) return false;
     return SHARED_REQUIRED.every((field) => !sharedFieldError(field, shared));
-  }, [categoryError, shared]);
+  }, [categoryError, category, shared]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -405,16 +409,18 @@ export default function CallSheet({ presetCategory, onCategoryChange, onSuccess 
           />
         ) : null}
 
-        <SharedRow
-          field="subject"
-          label="SUBJECT"
-          type="text"
-          value={shared.subject}
-          error={touched.subject ? sharedErrors.subject : undefined}
-          onChange={setSharedField}
-          onBlur={blurShared}
-          placeholder="who or what this shoot is for"
-        />
+        {category === "portrait" ? (
+          <SharedRow
+            field="subject"
+            label="SUBJECT"
+            type="text"
+            value={shared.subject}
+            error={touched.subject ? (sharedFieldError("subject", shared) ?? undefined) : undefined}
+            onChange={setSharedField}
+            onBlur={blurShared}
+            placeholder="who or what this shoot is for"
+          />
+        ) : null}
 
         <SharedRow
           field="location"
@@ -629,7 +635,6 @@ function CategoryFieldsSection({ category, values, setValues, onBlur }: Category
         onBlur={() => onBlur("occasion")}
         placeholder="graduation, headshots, couples"
       />
-      <TextRow id="cs-people" label="PEOPLE" type="number" value={v.people} onChange={(val) => set({ people: val })} onBlur={() => onBlur("people")} />
     </>
   );
 }

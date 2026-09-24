@@ -16,8 +16,10 @@ export default function App() {
   // The one background pick that follows the whole journey — set by
   // hovering/opening a strip on Landing, or by changing the shoot type in
   // CallSheet's dropdown (inline or standalone). Persists here, above the
-  // route switch, until Landing sets a new one.
-  const [plateCategory, setPlateCategory] = useState<CategoryKey | null>(null);
+  // route switch, until Landing sets a new one. Defaults to "brand" rather
+  // than null so the very first paint, before any hover, already shows an
+  // atmosphere plate instead of flat --bg.
+  const [plateCategory, setPlateCategory] = useState<CategoryKey | null>("brand");
 
   const location = useLocation();
   const bookMatch = matchPath("/book/:category", location.pathname);

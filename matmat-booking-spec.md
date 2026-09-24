@@ -171,6 +171,10 @@ Switching plates is always a direct crossfade from the old image to the new one;
 previous image stays in place until the new one has fully covered it, so there is never a
 beat where the flat `--bg` shows through underneath.
 
+Before any hover at all — the very first paint — the plate defaults to Brand & Lifestyle's
+atmosphere frame rather than flat `--bg`, so the page never opens on a bare, unatmospheric
+background.
+
 Above the fan, one line of copy and nothing else. Below it, a quiet, underlined link for
 people who want to see more work before deciding.
 

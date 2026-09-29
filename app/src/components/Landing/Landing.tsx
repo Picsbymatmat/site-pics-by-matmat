@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import Filmstrip from "../Filmstrip/Filmstrip";
 import CategoryView from "../CategoryView/CategoryView";
 import BookingFlow from "../BookingFlow/BookingFlow";
@@ -32,6 +32,8 @@ export default function Landing({ onLightTableChange, onPlateChange }: LandingPr
   const [mobileIndex, setMobileIndex] = useState(0);
   const isMobile = useMediaQuery(MOBILE_QUERY);
   const stripRefs = useRef<Partial<Record<CategoryKey, HTMLDivElement | null>>>({});
+  const fanRef = useRef<HTMLDivElement | null>(null);
+  const lastOpened = useRef<CategoryKey | null>(null);
 
   // Preload all four plates so the first hover/scroll doesn't flash empty
   // (§6 explicit requirement).
@@ -45,11 +47,26 @@ export default function Landing({ onLightTableChange, onPlateChange }: LandingPr
     });
   }, [photos]);
 
+  // Mobile, returning from a category's gallery: the fan is rebuilt from
+  // scratch (it starts back at the first strip), so scroll it straight to
+  // the strip that was opened — the visitor lands where they left off, and
+  // the dot below matches. Layout effect so there's no flash of strip one.
+  useLayoutEffect(() => {
+    if (!isMobile || openCategory || !lastOpened.current) return;
+    const fan = fanRef.current;
+    const index = CATEGORIES.findIndex((c) => c.key === lastOpened.current);
+    if (fan && index > 0) fan.scrollLeft = index * fan.clientWidth;
+  }, [isMobile, openCategory]);
+
   // Mobile: one strip fills the swipe at a time, so whichever strip is
   // currently landed on (scroll-snap, one discrete swipe per category —
   // §7) sets the plate — the strip with the highest intersection ratio.
+  // Re-runs when returning from a category (openCategory back to null):
+  // opening one unmounts the strips, so the observer has to attach to the
+  // freshly rendered ones or it keeps watching detached nodes and the
+  // dots stop updating.
   useEffect(() => {
-    if (!isMobile) return;
+    if (!isMobile || openCategory) return;
     const observer = new IntersectionObserver(
       (entries) => {
         const landed = entries.reduce<IntersectionObserverEntry | null>(
@@ -67,7 +84,7 @@ export default function Landing({ onLightTableChange, onPlateChange }: LandingPr
     );
     Object.values(stripRefs.current).forEach((el) => el && observer.observe(el));
     return () => observer.disconnect();
-  }, [isMobile, onPlateChange]);
+  }, [isMobile, onPlateChange, openCategory]);
 
   const handleHoverStart = useCallback(
     (key: CategoryKey) => {
@@ -78,6 +95,7 @@ export default function Landing({ onLightTableChange, onPlateChange }: LandingPr
 
   const handleOpen = useCallback(
     (key: CategoryKey) => {
+      lastOpened.current = key;
       setOpenCategory(key);
       onPlateChange(key);
     },
@@ -139,7 +157,7 @@ export default function Landing({ onLightTableChange, onPlateChange }: LandingPr
       <div className="landing-content">
         <p className="landing-heading">{content.copy["landing.heading"]}</p>
 
-        <div className="landing-fan">
+        <div className="landing-fan" ref={fanRef}>
           {strips.map(({ meta, frames }, i) => (
             <div
               className="landing-fan__strip"

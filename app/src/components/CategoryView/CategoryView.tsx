@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { CategoryViewProps, PhotoAsset } from "../../types";
+import { useStageUnit } from "../../lib/useStageUnit";
 import LightTable from "./LightTable";
 import "./CategoryView.css";
 
@@ -37,6 +38,16 @@ const CLIP_MARGIN = 8;
 // *second* frame lands in that same spot and its first frame is fully
 // hidden, not just moved mostly off-screen.
 const PARALLAX_INITIAL_OFFSETS = [-CLIP_MARGIN, -(FRAME_STEP + CLIP_MARGIN), -CLIP_MARGIN];
+// All px values above are at the 1440×812 design viewport; on desktop they
+// are multiplied by the stage unit (lib/useStageUnit.ts), matching the
+// --u-scaled CSS. A row needs enough frames that its right end still
+// reaches the viewport's right edge at its furthest left shift (opening
+// offset plus full drift) — a wider-than-design screen needs more.
+function desktopRowTarget(viewportWidth: number, u: number): number {
+  const designWidth = viewportWidth / u;
+  const needed = Math.ceil((designWidth + FRAME_STEP + CLIP_MARGIN + PARALLAX_CLAMP) / FRAME_STEP) + 1;
+  return Math.max(ROW_FILL_TARGET_DESKTOP, needed);
+}
 
 interface RailItem {
   frame: PhotoAsset;
@@ -47,8 +58,8 @@ function clamp(v: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, v));
 }
 
-// Builds one row's display sequence from its own independent pool (§11:
-// shoot1/2/3, one per row). §3: below `target`, the row cycles its real
+// Builds one row's display sequence from its own pool (§12: the category's
+// row1/2/3 folder, one per row). §3: below `target`, the row cycles its real
 // photos to fill out to that length (a fixed, finite list — not the old
 // infinite-scroll illusion, see the §7 note near the mobile effect below);
 // at or above `target`, it shows every real photo once, no repeats.
@@ -100,12 +111,12 @@ export default function CategoryView({
     };
   }, []);
 
+  const { u, width: viewportWidth } = useStageUnit();
+
+  const rowTarget = isMobile ? ROW_FILL_TARGET_MOBILE : desktopRowTarget(viewportWidth, u);
   const railRows = useMemo(
-    () =>
-      rows.map((rowFrames) =>
-        buildRow(rowFrames, isMobile ? ROW_FILL_TARGET_MOBILE : ROW_FILL_TARGET_DESKTOP),
-      ),
-    [rows, isMobile],
+    () => rows.map((rowFrames) => buildRow(rowFrames, rowTarget)),
+    [rows, rowTarget],
   );
 
   // Single shared rAF loop driving all rows' parallax, per spec §6 ("one
@@ -121,15 +132,17 @@ export default function CategoryView({
       rowRefs.current.forEach((el, i) => {
         if (!el) return;
         const rate = PARALLAX_RATES[i] ?? 0;
-        const x = clamp(y * rate * PARALLAX_SCALE, -PARALLAX_CLAMP, PARALLAX_CLAMP);
-        const initialOffset = PARALLAX_INITIAL_OFFSETS[i] ?? 0;
+        // scrollY already grows with u (the whole page is --u-scaled), so
+        // only the fixed px bounds need scaling here.
+        const x = clamp(y * rate * PARALLAX_SCALE, -PARALLAX_CLAMP * u, PARALLAX_CLAMP * u);
+        const initialOffset = (PARALLAX_INITIAL_OFFSETS[i] ?? 0) * u;
         el.style.transform = `translate3d(${initialOffset + x}px, 0, 0)`;
       });
       rafId = requestAnimationFrame(tick);
     };
     rafId = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(rafId);
-  }, [isMobile, reducedMotion, railRows.length]);
+  }, [isMobile, reducedMotion, railRows.length, u]);
 
   // Reset any leftover transform when switching into mobile/reduced-motion
   // mode so rails don't stick at a stale offset.

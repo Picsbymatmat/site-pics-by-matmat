@@ -1,4 +1,6 @@
 import { useCallback, useRef, useState } from "react";
+import { useMediaQuery, MOBILE_QUERY } from "../../lib/useMediaQuery";
+import { useStageUnit } from "../../lib/useStageUnit";
 import type { FilmstripProps } from "../../types";
 import "./Filmstrip.css";
 
@@ -17,11 +19,19 @@ const HOVER_DEBOUNCE_MS = 60;
 // landing strips — don't collide on id), and both edges' <rect>s reference
 // it by the same url(#...), so left and right are structurally incapable
 // of drifting apart.
-function SprocketPatternDef({ patternId }: { patternId: string }) {
+// `scale` sizes the holes with the strip on desktop (the pattern is drawn
+// in px, so it wouldn't follow the CSS --u scaling on its own).
+function SprocketPatternDef({ patternId, scale }: { patternId: string; scale: number }) {
   return (
     <svg width="0" height="0" aria-hidden="true" focusable="false" style={{ position: "absolute" }}>
       <defs>
-        <pattern id={patternId} patternUnits="userSpaceOnUse" width="18" height="18">
+        <pattern
+          id={patternId}
+          patternUnits="userSpaceOnUse"
+          width="18"
+          height="18"
+          patternTransform={`scale(${scale})`}
+        >
           <rect x="5" y="4" width="8" height="10" rx="2" fill="var(--rule)" />
         </pattern>
       </defs>
@@ -47,6 +57,8 @@ function SprocketEdge({ side, patternId }: { side: "left" | "right"; patternId: 
 export default function Filmstrip({ category, frames, onHoverStart, onOpen }: FilmstripProps) {
   const [active, setActive] = useState(false);
   const hoverTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isMobile = useMediaQuery(MOBILE_QUERY);
+  const { u } = useStageUnit();
 
   const clearHoverTimer = useCallback(() => {
     if (hoverTimer.current !== null) {
@@ -101,9 +113,9 @@ export default function Filmstrip({ category, frames, onHoverStart, onOpen }: Fi
   );
 
   // 3-4 frames per spec §3; if more are supplied, only show the first 4.
-  // Each slot is its own designated tag now (film1/2/3, §11) — a null
-  // entry means that slot's tag has nothing uploaded yet, rendered as its
-  // own placeholder block rather than borrowing another slot's photo.
+  // Slots come from the category's filmstrip/ folder (§12) — a null entry
+  // means fewer photos are uploaded there than slots, rendered as its own
+  // placeholder block rather than borrowing another slot's photo.
   const shown = frames.slice(0, 4);
   const patternId = `filmstrip-sprocket-${category.key}`;
 
@@ -120,7 +132,7 @@ export default function Filmstrip({ category, frames, onHoverStart, onOpen }: Fi
       onClick={handleActivate}
       onKeyDown={handleKeyDown}
     >
-      <SprocketPatternDef patternId={patternId} />
+      <SprocketPatternDef patternId={patternId} scale={isMobile ? 1 : u} />
       <div className="filmstrip-strip">
         <SprocketEdge side="left" patternId={patternId} />
         <div className="filmstrip-frames">

@@ -111,8 +111,11 @@ export default function Landing({ onLightTableChange, onPlateChange }: LandingPr
   // rather than leaving dead space below it, the way a vw-based value did.
   // min() with a vw figure is just a horizontal safety rail so a narrow
   // but unusually tall viewport can't blow out sideways.
+  //
+  // Desktop is 94px at the 1440×812 design viewport, scaled by --u
+  // (tokens.css) so the fan keeps the same proportions on every monitor.
   const stripVars: Record<string, string> = {
-    "--frame-width": isMobile ? "clamp(64px, min(13dvh, 30vw), 130px)" : "clamp(62px, 7.8vw, 94px)",
+    "--frame-width": isMobile ? "clamp(64px, min(13dvh, 30vw), 130px)" : "calc(94 * var(--u))",
   };
 
   if (openMeta && openCategory) {

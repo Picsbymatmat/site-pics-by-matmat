@@ -678,28 +678,35 @@ image layer once, against Cloudinary, from the start.
 
 ## 12. Content management
 
-**Photographs: Cloudinary free tier.** Matt uploads into a folder per category and tags
-each upload with that category's tag. He does not learn a CMS, and Cloudinary handles
-responsive resizing and format conversion, which this site needs regardless.
+**Photographs: Cloudinary free tier.** Matt uploads into folders — no tagging. He does
+not learn a CMS, and Cloudinary handles responsive resizing and format conversion, which
+this site needs regardless.
 
-- Folder/tag names map to category keys: `product`, `brand`, `event`, `portrait`,
-  `plates`.
+`{category}` is `product`, `brand`, `event` or `portrait`.
+
+| Folder | What goes in it |
+| --- | --- |
+| `{category}/filmstrip/` | Landing filmstrip — the first three photos |
+| `{category}/row1/`, `row2/`, `row3/` | The category page's three gallery rows, one folder per row |
+| `{category}/success/` | Confirmation-page photo — the first one |
+| `{category}/plate/` | That category's background plate — the first one |
+
 - Ordering by filename prefix (`01-`, `02-`) so he controls sequence by renaming.
 - Alt text from Cloudinary context metadata where set, with a sensible fallback.
 
-Two additional tags outside the category folders: `signature` for Matt's signature mark,
-and `favicon` for the site icon. Reference both by tag, never by hardcoded URL, so he can
+Two images stay tagged, outside any folder: `signature` for Matt's signature mark, and
+`favicon` for the site icon. Reference both by tag, never by hardcoded URL, so he can
 replace either by uploading a new image with that tag.
 
-**Listing without a secret.** Cloudinary's Admin API needs an API secret and must never
-run in the browser. Use the public tag-based list endpoint instead:
-`res.cloudinary.com/{cloud}/image/list/{tag}.json`, with a tag per category. Requires
-enabling resource listing in Cloudinary's security settings. The response is CDN cached,
-so new uploads take a minute or two to appear — acceptable, and worth telling Matt so he
-doesn't think it failed.
-
-Fetch at build time for the initial render, with a client-side fetch so uploads appear
-without a redeploy.
+**Listing folders needs the secret, so it runs server-side.** Cloudinary's Admin API needs
+an API secret and must never run in the browser. `netlify/functions/photos.ts` lists the
+folders with `CLOUDINARY_API_KEY`/`CLOUDINARY_API_SECRET` and returns every category's
+photos in one response. Netlify's CDN caches that response for five minutes, so new
+uploads take up to about five minutes to appear — worth telling Matt so he doesn't think it
+failed. The two tagged images use the public tag list endpoint
+(`res.cloudinary.com/{cloud}/image/list/{tag}.json`), which requires resource listing
+enabled in Cloudinary's security settings. A category with nothing uploaded shows local
+placeholders.
 
 **Text content: a JSON file in the repo**, edited by Gavin on request. Testimonials,
 results figures, and copy change perhaps twice a year and do not justify a second system.

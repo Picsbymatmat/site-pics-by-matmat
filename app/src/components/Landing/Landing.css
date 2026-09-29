@@ -79,6 +79,52 @@
   color: var(--ink);
 }
 
+/* Desktop: the whole composition — heading, fan, labels, link, spacing —
+   is sized in --u (tokens.css), so it scales as one piece and looks the
+   same on every monitor as at the 1440×812 design viewport. Each value is
+   the design-viewport px size it replaces. The strips' frame width itself
+   is set in Landing.tsx. Text keeps a readable floor on small windows. */
+@media (min-width: 768px) {
+  .landing-content {
+    padding: 0 calc(24 * var(--u)) calc(64 * var(--u));
+    gap: calc(48 * var(--u));
+  }
+
+  .landing-heading {
+    font-size: max(24px, calc(39.06 * var(--u)));
+  }
+
+  .landing-fan__strip {
+    margin-left: calc(-12 * var(--u));
+  }
+
+  .landing-portfolio-link {
+    font-size: max(12px, calc(14 * var(--u)));
+  }
+
+  .landing-fan .filmstrip {
+    gap: calc(8 * var(--u));
+  }
+
+  .landing-fan .filmstrip-strip {
+    gap: calc(4 * var(--u));
+    padding: calc(8 * var(--u)) 0;
+  }
+
+  .landing-fan .filmstrip-sprockets {
+    width: calc(10 * var(--u));
+  }
+
+  .landing-fan .filmstrip-frames {
+    gap: calc(4 * var(--u));
+  }
+
+  .landing-fan .filmstrip-label {
+    font-size: max(11px, calc(14 * var(--u)));
+    padding-bottom: calc(2 * var(--u));
+  }
+}
+
 @media (max-width: 767px) {
   /* Heading pinned near the top rather than vertically centred with the
      rest of the content — §7. */

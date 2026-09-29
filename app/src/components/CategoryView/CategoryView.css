@@ -165,3 +165,58 @@
     animation: none;
   }
 }
+
+/* Desktop: everything on this page is sized in --u (tokens.css), so every
+   monitor sees the same composition as the 1440×812 design viewport —
+   rows spanning edge to edge, about one and a half rows visible before
+   scrolling. Each value is the design-viewport px size it replaces.
+   CategoryView.tsx scales the parallax distances and per-row frame count
+   to match. The page's min-height (above) keeps the booking form below the
+   fold even on unusually tall screens. */
+@media (min-width: 768px) {
+  .category-view {
+    padding-bottom: calc(96 * var(--u));
+  }
+
+  .category-view-bar {
+    padding: calc(16 * var(--u)) calc(16 * var(--u)) 0;
+  }
+
+  .category-return {
+    font-size: max(12px, calc(14 * var(--u)));
+    padding: calc(8 * var(--u)) calc(12 * var(--u));
+    min-height: calc(44 * var(--u));
+  }
+
+  .category-view-heading {
+    font-size: max(24px, calc(39.06 * var(--u)));
+    padding: calc(32 * var(--u)) calc(16 * var(--u)) calc(24 * var(--u));
+  }
+
+  .category-rails {
+    gap: calc(36 * var(--u));
+  }
+
+  .category-rail-block {
+    gap: calc(12 * var(--u));
+  }
+
+  .category-rail-label {
+    font-size: max(12px, calc(20 * var(--u)));
+    width: min(calc(512 * var(--u)), 100%);
+    gap: calc(16 * var(--u));
+  }
+
+  .category-rail-viewport {
+    padding: calc(12 * var(--u)) 0;
+  }
+
+  .category-rail-track {
+    gap: calc(12 * var(--u));
+    padding: 0 calc(16 * var(--u));
+  }
+
+  .category-frame {
+    width: calc(240 * var(--u));
+  }
+}

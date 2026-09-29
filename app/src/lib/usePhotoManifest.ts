@@ -4,9 +4,9 @@ import { getAllCategoryPhotos } from "./cloudinary";
 import type { PhotoManifest } from "../types";
 
 /** The live photo manifest: local placeholders immediately (so nothing
- *  ever renders empty), swapped for Cloudinary's tagged uploads once that
- *  fetch resolves (a no-op when no cloud name is configured, or a tag has
- *  nothing uploaded yet — see lib/cloudinary.ts's per-category fallback). */
+ *  ever renders empty), swapped for Cloudinary's folder contents once that
+ *  fetch resolves (categories with nothing uploaded keep their
+ *  placeholders — see lib/cloudinary.ts). */
 export function usePhotoManifest(): PhotoManifest {
   const [manifest, setManifest] = useState<PhotoManifest>(PHOTOS);
 

@@ -19,20 +19,21 @@ export interface PhotoAsset {
 }
 
 export interface CategoryPhotos {
-  /** Landing filmstrip's 3 fixed preview slots, Cloudinary-tagged
-   *  {key}-film1/2/3 — each its own exact, designated photo, not a pool.
-   *  A null slot renders as a neutral placeholder block (Filmstrip), never
-   *  a broken image and never fabricated photography. */
+  /** Landing filmstrip's 3 preview slots: the first three photos in the
+   *  Cloudinary folder {key}/filmstrip/. A null slot renders as a neutral
+   *  placeholder block (Filmstrip), never a broken image and never
+   *  fabricated photography. */
   film: [PhotoAsset | null, PhotoAsset | null, PhotoAsset | null];
-  /** CategoryView's 3 rail rows, each its own independent pool of photos,
-   *  Cloudinary-tagged {key}-shoot1/2/3. An empty row renders with no
-   *  frames rather than borrowing from another row. */
+  /** CategoryView's 3 rail rows: the Cloudinary folders {key}/row1/,
+   *  row2/ and row3/. An empty row renders with no frames rather than
+   *  borrowing from another row. */
   rows: [PhotoAsset[], PhotoAsset[], PhotoAsset[]];
-  /** Background atmosphere plate, tagged {key}-background. Null = fall
-   *  back to a flat --surface tint, never stretch a frame photo into it. */
+  /** Background atmosphere plate: the first photo in the Cloudinary folder
+   *  {key}/plate/. Null = fall back to a flat --surface tint, never stretch
+   *  a frame photo into it. */
   background: PhotoAsset | null;
-  /** Polaroid confirmation hero, tagged {key}-hero. Null = Polaroid
-   *  develops to a flat tint with the handwritten line only, no image. */
+  /** Success-page photo: the first photo in the Cloudinary folder
+   *  {key}/success/. Null = the Polaroid's generic placeholder image. */
   hero: PhotoAsset | null;
 }
 
@@ -128,8 +129,8 @@ export interface SiteContent {
 
 export interface FilmstripProps {
   category: CategoryMeta;
-  /** Exactly 3 slots (film1/2/3) — a null entry renders as a placeholder
-   *  block, not a repeated/borrowed frame. */
+  /** Exactly 3 slots (the {key}/filmstrip/ folder) — a null entry renders
+   *  as a placeholder block, not a repeated/borrowed frame. */
   frames: (PhotoAsset | null)[];
   onHoverStart: (key: CategoryKey) => void;
   onOpen: (key: CategoryKey) => void;
@@ -137,8 +138,7 @@ export interface FilmstripProps {
 
 export interface CategoryViewProps {
   category: CategoryMeta;
-  /** One independent pool per rail row (shoot1/2/3) — rows no longer
-   *  share a single frame sequence. */
+  /** One pool per rail row — the {key}/row1/, row2/, row3/ folders. */
   rows: [PhotoAsset[], PhotoAsset[], PhotoAsset[]];
   onReturn: () => void;
   /** Phase 2: nav must hide while the light table is open (§3, §14). */

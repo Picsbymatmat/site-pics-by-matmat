@@ -83,10 +83,9 @@
 }
 
 /* Every Polaroid develops from this flat grey — real hero photo or the
-   generic placeholder alike — with a warm gradient wash crossfading in
-   on top, as one resolving exposure. grain-overlay and the image-area
-   vignette (both painted after this in the DOM/pseudo-element order) sit
-   above every layer throughout. */
+   generic placeholder alike — into the photo's true colours, no tint on
+   top. grain-overlay and the image-area vignette (both painted after this
+   in the DOM/pseudo-element order) sit above it throughout. */
 .polaroid__develop {
   position: relative;
   width: 100%;
@@ -94,9 +93,8 @@
   background: #8a8a86;
 }
 
-/* Stays fully hidden behind the flat grey background until develop — it
-   fades in at the same moment as the tint, so the whole exposure resolves
-   together rather than showing the photo early. */
+/* Stays fully hidden behind the flat grey background until develop, so the
+   whole exposure resolves together rather than showing the photo early. */
 .polaroid__develop .polaroid__photo {
   opacity: 0;
   transition-property: opacity, filter;
@@ -104,20 +102,6 @@
 
 .polaroid__develop .polaroid__photo--developed {
   opacity: 1;
-}
-
-.polaroid__tint {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(115deg, #8a8a86 0%, #8a8a86 24%, #b98f57 50%, var(--accent) 75%, #8a5b26 100%);
-  mix-blend-mode: color;
-  opacity: 0;
-  transition-property: opacity;
-  transition-timing-function: ease-out;
-}
-
-.polaroid__tint--developed {
-  opacity: 0.6;
 }
 
 .polaroid__exposure {
@@ -146,7 +130,6 @@
 }
 
 .polaroid--no-motion .polaroid__photo,
-.polaroid--no-motion .polaroid__tint,
 .polaroid--no-motion .polaroid__exposure {
   transition: none;
 }

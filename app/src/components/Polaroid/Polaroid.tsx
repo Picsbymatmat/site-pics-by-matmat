@@ -22,7 +22,7 @@ function readDurationMs(varName: string, fallback: number): number {
 
 export default function Polaroid({ category, hero, reducedMotion }: PolaroidProps) {
   // risen: frame has completed (or, under reduced motion, skipped) its rise.
-  // developed: image/tint has completed (or skipped) its develop.
+  // developed: image has completed (or skipped) its develop.
   const [risen, setRisen] = useState(reducedMotion);
   const [developed, setDeveloped] = useState(reducedMotion);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
@@ -104,15 +104,6 @@ export default function Polaroid({ category, hero, reducedMotion }: PolaroidProp
                   ? undefined
                   : { transitionDuration: `${developMsForStyle}ms` }
               }
-            />
-            <div
-              className={`polaroid__tint${developed ? " polaroid__tint--developed" : ""}`}
-              style={
-                reducedMotion
-                  ? undefined
-                  : { transitionDuration: `${developMsForStyle}ms` }
-              }
-              aria-hidden="true"
             />
           </div>
           <div className="grain-overlay" />

@@ -31,3 +31,17 @@
 a.nav__instagram:hover {
   color: var(--ink);
 }
+
+/* Desktop: proportional to the viewport via --u (tokens.css), so every
+   monitor sees the same composition as the 1440×812 design viewport.
+   Text keeps a readable floor on small windows. */
+@media (min-width: 768px) {
+  .nav {
+    padding: calc(16 * var(--u)) calc(24 * var(--u));
+  }
+
+  .nav__book,
+  .nav__instagram {
+    font-size: max(12px, calc(14 * var(--u)));
+  }
+}

@@ -91,11 +91,10 @@ const SHARED_REQUIRED: SharedFieldName[] = [
 
 type SubmitStatus = "idle" | "pending" | "failure";
 
-// Paused for testing convenience per client feedback: required-field and
-// format errors still compute and display normally (on blur, as usual),
-// but no longer block submission — only a chosen category does, since the
-// payload is meaningless without one. Flip back to true before launch.
-const BLOCK_SUBMIT_ON_VALIDATION_ERRORS = false;
+// Required-field and format errors block submission. Setting this to false
+// is a local-testing convenience only (errors still display, but a blank
+// or malformed form can submit) — never ship it false.
+const BLOCK_SUBMIT_ON_VALIDATION_ERRORS = true;
 
 // Fixed path, not an env-configured URL — §2: "No simulate-success
 // fallback for the function itself... there is no 'unconfigured' state to
@@ -229,9 +228,9 @@ export default function CallSheet({ presetCategory, onCategoryChange, onSuccess 
 
     if (BLOCK_SUBMIT_ON_VALIDATION_ERRORS && (!category || !isValid)) return;
 
-    // Testing convenience per client feedback (see BLOCK_SUBMIT_ON_VALIDATION_ERRORS
-    // above): even with no category chosen, fall back to the first one so a
-    // fully blank form can still submit and produce a valid payload shape.
+    // Only reachable with no category when BLOCK_SUBMIT_ON_VALIDATION_ERRORS
+    // is switched off for local testing: fall back to the first category so
+    // a blank form still produces a valid payload shape.
     const effectiveCategory = category ?? CATEGORIES[0].key;
 
     const contactValue = shared.contactValue.trim() || null;

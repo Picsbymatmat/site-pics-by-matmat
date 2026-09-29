@@ -1,11 +1,11 @@
 import type { PhotoManifest } from "../types";
 
 /**
- * Interim manifest, one real photo per category reused across every slot,
- * ahead of Cloudinary (§11) and Matt's full photo delivery (§15: 15-25 per
- * category) tagged distinctly per slot ({key}-film1/2/3, {key}-shoot1/2/3,
- * {key}-background, {key}-hero). Not the final asset count or arrangement —
- * components must still handle any slot being null/empty.
+ * Local placeholder manifest, one real photo per category reused across
+ * every slot — shown for any category with nothing uploaded to its
+ * Cloudinary folders yet (§12), or when the photos function isn't running
+ * (plain `vite dev`). Components must still handle any slot being
+ * null/empty.
  */
 export const PHOTOS: PhotoManifest = {
   product: {

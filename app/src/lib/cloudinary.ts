@@ -5,20 +5,20 @@ import { PHOTOS } from "../data/photos";
  * Cloudinary wiring (§11, §12).
  *
  * Category photos come from Cloudinary *folders*, no tags needed:
- *   {category}/filmstrip/     landing filmstrip
- *   {category}/row1/ … row3/  category page's three gallery rows
- *   {category}/success/       confirmation photo
- *   {category}/plate/         background plate
+ *   {category}/row1/ … row3/  category page's three gallery rows; each
+ *                             row's first photo is also a landing
+ *                             filmstrip frame
+ *   {category}/background/    background plate
  * Listing a folder needs Cloudinary's API secret, so the listing happens
  * server-side in netlify/functions/photos.ts; this just fetches its result.
  * That function only runs under Netlify (or `netlify dev` locally) — under
  * plain `vite dev` it 404s and every category shows the local placeholders.
  *
- * `favicon` and `signature` are still single tags outside any folder, read
+ * `favicon`, `signature` and `polaroid` are single tags outside any folder, read
  * through Cloudinary's public tag-list endpoint (no secret needed; requires
  * "Resource list" enabled in the account's security settings).
  *
- * A category with nothing uploaded (no filmstrip or gallery photos) falls
+ * A category with nothing uploaded (no gallery photos) falls
  * back to the local placeholder manifest. Once it has any real content,
  * individual empty slots stay empty rather than borrowing a placeholder —
  * components render those as neutral placeholder blocks.
@@ -96,6 +96,7 @@ async function fetchFirstTagged(tag: string): Promise<PhotoAsset | null> {
 
 let signaturePromise: Promise<PhotoAsset | null> | null = null;
 let faviconPromise: Promise<PhotoAsset | null> | null = null;
+let polaroidPromise: Promise<PhotoAsset | null> | null = null;
 
 /** Matt's signature mark (tag `signature`), or null if unconfigured —
  *  callers fall back to the local placeholder PNG in that case. */
@@ -109,4 +110,12 @@ export function getSignature(): Promise<PhotoAsset | null> {
 export function getFavicon(): Promise<PhotoAsset | null> {
   if (!faviconPromise) faviconPromise = fetchFirstTagged("favicon");
   return faviconPromise;
+}
+
+/** Success-page Polaroid photo (tag `polaroid`), one for every category,
+ *  or null if unconfigured — Polaroid shows its generic placeholder image
+ *  in that case. */
+export function getPolaroid(): Promise<PhotoAsset | null> {
+  if (!polaroidPromise) polaroidPromise = fetchFirstTagged("polaroid");
+  return polaroidPromise;
 }

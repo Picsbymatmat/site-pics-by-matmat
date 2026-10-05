@@ -113,8 +113,8 @@ export default function Filmstrip({ category, frames, onHoverStart, onOpen }: Fi
   );
 
   // 3-4 frames per spec §3; if more are supplied, only show the first 4.
-  // Slots come from the category's filmstrip/ folder (§12) — a null entry
-  // means fewer photos are uploaded there than slots, rendered as its own
+  // Slots are the first photo of each row1/ … row3/ folder (§12) — a null
+  // entry means that row has nothing uploaded yet, rendered as its own
   // placeholder block rather than borrowing another slot's photo.
   const shown = frames.slice(0, 4);
   const patternId = `filmstrip-sprocket-${category.key}`;

@@ -7,12 +7,13 @@
 //
 // Folder layout Matt uploads into (filename order = display order, so a
 // `01-`, `02-` prefix controls sequence):
-//   {category}/filmstrip/     landing filmstrip, first three photos
-//   {category}/row1/ … row3/  the category page's three gallery rows
-//   {category}/success/       confirmation photo, first one
-//   {category}/plate/         background plate, first one
-// where {category} is product, brand, event or portrait. `favicon` and
-// `signature` stay as tags outside any folder (see src/lib/cloudinary.ts).
+//   {category}/row1/ … row3/  the category page's three gallery rows; the
+//                             first photo of each is also that category's
+//                             landing filmstrip frame 1 … 3
+//   {category}/background/    background plate, first one
+// where {category} is product, brand, event or portrait. `favicon`,
+// `signature` and `polaroid` stay as tags outside any folder (see
+// src/lib/cloudinary.ts).
 //
 // Response: { photos: Record<CategoryKey, CategoryPhotos> }
 
@@ -34,7 +35,6 @@ interface CategoryPhotos {
   film: [PhotoAsset | null, PhotoAsset | null, PhotoAsset | null];
   rows: [PhotoAsset[], PhotoAsset[], PhotoAsset[]];
   background: PhotoAsset | null;
-  hero: PhotoAsset | null;
 }
 
 interface AdminResource {
@@ -117,19 +117,16 @@ async function listSorted(folder: string): Promise<PhotoAsset[]> {
 }
 
 async function categoryPhotos(key: CategoryKey): Promise<CategoryPhotos> {
-  const [film, row1, row2, row3, success, plate] = await Promise.all([
-    listSorted(`${key}/filmstrip`),
+  const [row1, row2, row3, background] = await Promise.all([
     listSorted(`${key}/row1`),
     listSorted(`${key}/row2`),
     listSorted(`${key}/row3`),
-    listSorted(`${key}/success`),
-    listSorted(`${key}/plate`),
+    listSorted(`${key}/background`),
   ]);
   return {
-    film: [film[0] ?? null, film[1] ?? null, film[2] ?? null],
+    film: [row1[0] ?? null, row2[0] ?? null, row3[0] ?? null],
     rows: [row1, row2, row3],
-    background: plate[0] ?? null,
-    hero: success[0] ?? null,
+    background: background[0] ?? null,
   };
 }
 
@@ -152,7 +149,7 @@ export default async (req: Request): Promise<Response> => {
         // Browsers always revalidate; Netlify's CDN serves a cached copy
         // for 5 minutes (so new uploads appear within about 5 minutes) and
         // refreshes in the background. Keeps Cloudinary Admin API calls —
-        // ~24 per refresh, rate-limited per hour — far below the limit.
+        // ~16 per refresh, rate-limited per hour — far below the limit.
         "Cache-Control": "public, max-age=0, must-revalidate",
         "Netlify-CDN-Cache-Control": "public, s-maxage=300, stale-while-revalidate=86400, durable",
       },

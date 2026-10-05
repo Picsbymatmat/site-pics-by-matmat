@@ -20,7 +20,6 @@ export const PHOTOS: PhotoManifest = {
       [{ src: "/images/placeholder/product/01-product.jpg", alt: "Product photography, studio still life.", w: 600, h: 900 }],
     ],
     background: { src: "/images/placeholder/product/01-product-plate.jpg", alt: "", w: 800, h: 1000 },
-    hero: { src: "/images/placeholder/product/01-product.jpg", alt: "Product photography, studio still life.", w: 600, h: 900 },
   },
   brand: {
     film: [
@@ -34,7 +33,6 @@ export const PHOTOS: PhotoManifest = {
       [{ src: "/images/placeholder/brand/01-brand.jpg", alt: "Brand and lifestyle photography, client sample shoot.", w: 600, h: 750 }],
     ],
     background: { src: "/images/placeholder/brand/01-brand-plate.jpg", alt: "", w: 1200, h: 800 },
-    hero: { src: "/images/placeholder/brand/01-brand.jpg", alt: "Brand and lifestyle photography, client sample shoot.", w: 600, h: 750 },
   },
   event: {
     film: [
@@ -48,7 +46,6 @@ export const PHOTOS: PhotoManifest = {
       [{ src: "/images/placeholder/event/01-event.jpg", alt: "Event photography, live coverage.", w: 600, h: 900 }],
     ],
     background: { src: "/images/placeholder/event/01-event-plate.jpg", alt: "", w: 600, h: 900 },
-    hero: { src: "/images/placeholder/event/01-event.jpg", alt: "Event photography, live coverage.", w: 600, h: 900 },
   },
   portrait: {
     film: [
@@ -62,6 +59,5 @@ export const PHOTOS: PhotoManifest = {
       [{ src: "/images/placeholder/portrait/01-portrait.jpg", alt: "Graduation portrait, outdoor golden-hour setting.", w: 600, h: 900 }],
     ],
     background: { src: "/images/placeholder/portrait/01-portrait-plate.jpg", alt: "", w: 600, h: 900 },
-    hero: { src: "/images/placeholder/portrait/01-portrait.jpg", alt: "Graduation portrait, outdoor golden-hour setting.", w: 600, h: 900 },
   },
 };

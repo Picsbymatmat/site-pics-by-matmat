@@ -68,11 +68,18 @@ interface CategoryFieldState {
   portrait: PortraitFields;
 }
 
+// Event and Portrait pick from the same shoot types that title their
+// CategoryView rail rows, so the two never drift apart.
+const shootTypeOptions = (key: CategoryKey) => [
+  ...CATEGORIES.find((c) => c.key === key)!.shootTypes,
+  "Other",
+];
+
 const EMPTY_CATEGORY_FIELDS: CategoryFieldState = {
   product: { business: "", productCount: "", usage: "ecommerce listings" },
   brand: { business: "", deliverables: "social content", shootLength: "1 hour" },
-  event: { eventType: "", duration: "", guestCount: "" },
-  portrait: { occasion: "" },
+  event: { eventType: shootTypeOptions("event")[0], duration: "", guestCount: "" },
+  portrait: { occasion: shootTypeOptions("portrait")[0] },
 };
 
 type SharedFieldName = keyof SharedFieldValues;
@@ -593,7 +600,7 @@ function CategoryFieldsSection({ category, values, setValues, onBlur }: Category
           value={v.deliverables}
           onChange={(val) => set({ deliverables: val as BrandFields["deliverables"] })}
           onBlur={() => onBlur("deliverables")}
-          options={["social content", "campaign", "headshots", "other"]}
+          options={["social content", "campaign", "other"]}
         />
         <SelectRow
           id="cs-shootLength"
@@ -613,7 +620,14 @@ function CategoryFieldsSection({ category, values, setValues, onBlur }: Category
       setValues((prev) => ({ ...prev, event: { ...prev.event, ...patch } }));
     return (
       <>
-        <TextRow id="cs-eventType" label="EVENT TYPE" value={v.eventType} onChange={(val) => set({ eventType: val })} onBlur={() => onBlur("eventType")} />
+        <SelectRow
+          id="cs-eventType"
+          label="EVENT TYPE"
+          value={v.eventType}
+          onChange={(val) => set({ eventType: val })}
+          onBlur={() => onBlur("eventType")}
+          options={shootTypeOptions("event")}
+        />
         <TextRow id="cs-duration" label="DURATION" value={v.duration} onChange={(val) => set({ duration: val })} onBlur={() => onBlur("duration")} />
         <TextRow id="cs-guestCount" label="GUEST COUNT" value={v.guestCount} onChange={(val) => set({ guestCount: val })} onBlur={() => onBlur("guestCount")} />
       </>
@@ -626,13 +640,13 @@ function CategoryFieldsSection({ category, values, setValues, onBlur }: Category
     setValues((prev) => ({ ...prev, portrait: { ...prev.portrait, ...patch } }));
   return (
     <>
-      <TextRow
+      <SelectRow
         id="cs-occasion"
-        label="OCCASION"
+        label="PORTRAIT TYPE"
         value={v.occasion}
         onChange={(val) => set({ occasion: val })}
         onBlur={() => onBlur("occasion")}
-        placeholder="graduation, headshots, couples"
+        options={shootTypeOptions("portrait")}
       />
     </>
   );

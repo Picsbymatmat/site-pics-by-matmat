@@ -203,7 +203,7 @@ export default function CategoryView({
         <div className="category-rails" aria-label={`${category.label} photographs`}>
           {railRows.map((row, rowIndex) => (
             <div className="category-rail-block" key={rowIndex}>
-              <p className="category-rail-label mono">shoot type {rowIndex + 1}</p>
+              <p className="category-rail-label mono">{category.shootTypes[rowIndex]}</p>
               <div className="category-rail-viewport">
                 <div
                   className="category-rail-track"

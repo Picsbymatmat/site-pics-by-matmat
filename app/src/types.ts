@@ -9,6 +9,9 @@ export interface CategoryMeta {
   label: string;
   /** URL segment: product, brand, event, portrait */
   slug: string;
+  /** CategoryView's rail row titles, in row order: shootTypes[0] labels the
+   *  {key}/row1/ folder, [1] row2/, [2] row3/. */
+  shootTypes: [string, string, string];
 }
 
 export interface PhotoAsset {
@@ -49,7 +52,7 @@ export interface ProductFields {
 
 export interface BrandFields {
   business: string;
-  deliverables: "social content" | "campaign" | "headshots" | "other";
+  deliverables: "social content" | "campaign" | "other";
   shootLength: "1 hour" | "2 hours" | "half day";
 }
 

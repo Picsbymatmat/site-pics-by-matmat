@@ -76,6 +76,21 @@ function buildRow(frames: PhotoAsset[], target: number): RailItem[] {
   return out;
 }
 
+// Row 2 on desktop opens shifted left by one frame (PARALLAX_INITIAL_OFFSETS),
+// hiding its first slot. So that the row's first photo — the one the
+// landing filmstrip shows for it — is still the first one visible, that
+// hidden slot holds the row's last photo instead: last, first, second, …
+// The row keeps the same length as buildRow would give it.
+function buildShiftedRow(frames: PhotoAsset[], target: number): RailItem[] {
+  if (frames.length < 2) return buildRow(frames, target);
+  const lastIndex = frames.length - 1;
+  const last: RailItem = { frame: frames[lastIndex], originalIndex: lastIndex };
+  // Every photo shown once: the same photos, the last one moved to the front.
+  if (frames.length >= target) return [last, ...buildRow(frames, target).slice(0, lastIndex)];
+  // A sparse row: the last photo, then the usual first-photo-onwards cycle.
+  return [last, ...buildRow(frames, target - 1)];
+}
+
 function frameLabel(index: number): string {
   return String(index + 1).padStart(2, "0");
 }
@@ -114,9 +129,18 @@ export default function CategoryView({
   const { u, width: viewportWidth } = useStageUnit();
 
   const rowTarget = isMobile ? ROW_FILL_TARGET_MOBILE : desktopRowTarget(viewportWidth, u);
+  // The row 2 shift only exists while the desktop parallax runs (not on
+  // mobile, not under reduced motion), so only then does it need the
+  // reordered row.
+  const rowShifted = !isMobile && !reducedMotion;
   const railRows = useMemo(
-    () => rows.map((rowFrames) => buildRow(rowFrames, rowTarget)),
-    [rows, rowTarget],
+    () =>
+      rows.map((rowFrames, rowIndex) =>
+        rowShifted && PARALLAX_INITIAL_OFFSETS[rowIndex] < -CLIP_MARGIN
+          ? buildShiftedRow(rowFrames, rowTarget)
+          : buildRow(rowFrames, rowTarget),
+      ),
+    [rows, rowTarget, rowShifted],
   );
 
   // Single shared rAF loop driving all rows' parallax, per spec §6 ("one

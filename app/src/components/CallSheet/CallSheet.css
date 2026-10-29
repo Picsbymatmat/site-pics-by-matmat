@@ -173,6 +173,8 @@
   font-family: var(--font-display);
   min-height: 44px;
   min-width: 44px;
+  /* Overrides the page-wide dark scheme so the native calendar icon renders dark. */
+  color-scheme: light;
 }
 
 .call-sheet__date-input:hover,
